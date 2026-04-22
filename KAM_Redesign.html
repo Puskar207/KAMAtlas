@@ -1,0 +1,2599 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Atlas — Weekly Plan (redesign, interactive)</title>
+<style>
+  :root {
+    --bg: #0E141B;
+    --surface: #151D28;
+    --surface-2: #1B2535;
+    --surface-3: #222E40;
+    --border: #2A3547;
+    --border-soft: #1F2A3A;
+    --text: #E8EEF5;
+    --text-dim: #9AA8B8;
+    --text-mute: #6B7887;
+    --accent: #22C55E;
+    --accent-dark: #16A34A;
+    --accent-soft: rgba(34,197,94,.14);
+
+    --p0: #EF4444;
+    --p0-soft: rgba(239,68,68,.14);
+    --p1: #F59E0B;
+    --p1-soft: rgba(245,158,11,.14);
+    --p2: #3B82F6;
+    --p2-soft: rgba(59,130,246,.14);
+    --p3: #6B7280;
+    --p3-soft: rgba(107,114,128,.14);
+
+    --retention: #EF4444;
+    --opportunity: #3B82F6;
+    --conversion: #8B5CF6;
+    --monitor: #6B7280;
+    --routed: #F59E0B;
+
+    --chip-bg: #1E2937;
+    --chip-border: #2F3D53;
+
+    --compare-old: #F59E0B;
+    --compare-new: #22C55E;
+  }
+
+  * { box-sizing: border-box; }
+
+  html, body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--text);
+    font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    font-size: 14px;
+    line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  a { color: inherit; text-decoration: none; }
+  button { font-family: inherit; cursor: pointer; }
+
+  /* -------- Layout shell -------- */
+  .app {
+    display: grid;
+    grid-template-columns: 56px 1fr 52px;
+    min-height: 100vh;
+  }
+
+  .rail {
+    background: #0B1017;
+    border-right: 1px solid var(--border-soft);
+    padding: 16px 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 18px;
+  }
+  .rail .logo {
+    width: 32px; height: 32px; border-radius: 8px;
+    background: linear-gradient(135deg, #8B5CF6, #22C55E);
+    display: grid; place-items: center;
+    color: white; font-weight: 700; font-size: 14px;
+  }
+  .rail .ricon {
+    width: 36px; height: 36px; border-radius: 8px;
+    display: grid; place-items: center;
+    color: var(--text-mute); cursor: pointer;
+  }
+  .rail .ricon:hover { background: var(--surface-2); color: var(--text); }
+  .rail .ricon.active { color: var(--accent); background: rgba(34,197,94,.08); }
+
+  .calrail {
+    background: #0B1017;
+    border-left: 1px solid var(--border-soft);
+    display: flex; justify-content: center; align-items: flex-start;
+    padding: 60px 0;
+    cursor: pointer;
+  }
+  .calrail .tab {
+    writing-mode: vertical-rl; transform: rotate(180deg);
+    padding: 12px 8px;
+    color: var(--text-dim);
+    letter-spacing: .06em;
+    font-size: 12px;
+    font-weight: 600;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    background: var(--surface);
+  }
+
+  .main { padding: 22px 28px 80px; min-width: 0; position: relative; }
+
+  /* -------- Header -------- */
+  .hdr-top {
+    display: flex; justify-content: space-between; align-items: center;
+    margin-bottom: 4px;
+    gap: 14px;
+  }
+  .hdr-title {
+    display: flex; align-items: center; gap: 10px;
+    font-size: 22px; font-weight: 700; color: #fff;
+  }
+  .hdr-title .spark { color: var(--accent); font-size: 16px; }
+  .hdr-sub {
+    color: var(--text-dim);
+    font-size: 13px;
+    margin-top: 2px;
+  }
+  .hdr-sub b { color: var(--text); font-weight: 600; }
+  .hdr-actions { display: flex; align-items: center; gap: 10px; }
+
+  .btn {
+    height: 36px;
+    padding: 0 14px;
+    border-radius: 8px;
+    border: 1px solid var(--border);
+    background: var(--surface);
+    color: var(--text);
+    font-size: 13px;
+    font-weight: 500;
+    display: inline-flex; align-items: center; gap: 8px;
+  }
+  .btn:hover { background: var(--surface-2); }
+  .btn.primary {
+    background: var(--accent);
+    border-color: var(--accent);
+    color: #0B1017;
+    font-weight: 600;
+  }
+  .btn.primary:hover { background: var(--accent-dark); }
+  .btn.ghost { background: transparent; }
+  .btn.sm { height: 30px; padding: 0 10px; font-size: 12px; border-radius: 6px; }
+  .btn.xs { height: 26px; padding: 0 8px; font-size: 12px; border-radius: 6px; }
+  .btn.icon { padding: 0 10px; }
+
+  /* Toggle switch */
+  .toggle-wrap {
+    display: inline-flex; align-items: center; gap: 8px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 0 10px; height: 36px;
+    font-size: 12px;
+    color: var(--text-dim);
+  }
+  .toggle-wrap b { color: var(--text); font-weight: 600; margin-right: 2px;}
+  .switch {
+    width: 30px; height: 16px; border-radius: 10px; background: var(--surface-3);
+    position: relative; cursor: pointer; transition: background .15s;
+    flex-shrink: 0;
+  }
+  .switch::after {
+    content: ""; position: absolute; left: 2px; top: 2px;
+    width: 12px; height: 12px; border-radius: 50%; background: #fff;
+    transition: left .15s;
+  }
+  .switch.on { background: var(--accent); }
+  .switch.on::after { left: 16px; }
+
+  /* -------- KPI bar -------- */
+  .kpis {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 12px;
+    margin: 18px 0 22px;
+  }
+  .kpi {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 14px 16px;
+    position: relative;
+    overflow: hidden;
+  }
+  .kpi .lbl {
+    color: var(--text-dim);
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: .05em;
+    font-weight: 600;
+  }
+  .kpi .val {
+    color: #fff;
+    font-size: 22px;
+    font-weight: 700;
+    margin-top: 4px;
+    letter-spacing: -.01em;
+  }
+  .kpi .sub { color: var(--text-dim); font-size: 12px; margin-top: 2px; }
+  .kpi .bar {
+    height: 4px; border-radius: 4px; background: var(--surface-3); margin-top: 10px; overflow: hidden;
+  }
+  .kpi .bar > span {
+    display: block; height: 100%; background: var(--accent); border-radius: 4px;
+  }
+  .kpi.protect .val { color: #fff; }
+  .kpi.protect .bar > span { background: var(--p0); }
+  .kpi.unlock .bar > span { background: var(--p2); }
+
+  /* -------- Day ladder -------- */
+  .daybar {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 10px;
+    margin-bottom: 22px;
+  }
+  .day {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 10px 14px;
+    display: flex; align-items: center; justify-content: space-between;
+    cursor: pointer;
+  }
+  .day:hover { border-color: var(--chip-border); }
+  .day.active {
+    border-color: var(--accent);
+    background: var(--accent-soft);
+  }
+  .day .dname {
+    color: var(--text); font-weight: 600; font-size: 13px;
+    display: flex; flex-direction: column; line-height: 1.25;
+  }
+  .day .dname span { color: var(--text-dim); font-weight: 500; font-size: 11px; }
+  .day .dcount {
+    min-width: 28px; height: 24px; padding: 0 8px;
+    border-radius: 12px;
+    background: var(--surface-3);
+    display: grid; place-items: center;
+    font-weight: 600; font-size: 12px;
+    color: var(--text);
+  }
+  .day.active .dcount { background: var(--accent); color: #0B1017; }
+  .day.zero .dcount { color: var(--text-mute); background: transparent; border: 1px dashed var(--border); }
+
+  /* -------- Toolbar (search/sort/filter) -------- */
+  .toolbar {
+    display: flex; align-items: center; gap: 10px;
+    margin-bottom: 14px;
+    position: relative;
+  }
+  .search {
+    flex: 1;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 0 12px;
+    height: 36px;
+    display: flex; align-items: center; gap: 8px;
+    color: var(--text-dim);
+  }
+  .search input {
+    background: transparent; border: 0; outline: 0; color: var(--text);
+    font-size: 13px; width: 100%; font-family: inherit;
+  }
+  .chipbtn {
+    height: 32px; padding: 0 12px;
+    border-radius: 16px;
+    border: 1px solid var(--border);
+    background: var(--surface);
+    color: var(--text-dim);
+    font-size: 12px; font-weight: 500;
+    display: inline-flex; align-items: center; gap: 6px;
+  }
+  .chipbtn.on {
+    background: var(--accent-soft);
+    border-color: var(--accent);
+    color: var(--accent);
+  }
+
+  /* -------- Section -------- */
+  .section { margin-bottom: 26px; position: relative; }
+  .sec-head {
+    display: flex; align-items: center; gap: 12px;
+    padding: 0 4px 10px;
+  }
+  .sec-head .dot {
+    width: 10px; height: 10px; border-radius: 50%;
+  }
+  .sec-head h2 {
+    margin: 0;
+    font-size: 15px;
+    font-weight: 700;
+    letter-spacing: .01em;
+    color: var(--text);
+  }
+  .sec-head .count {
+    color: var(--text-dim); font-size: 13px;
+    font-weight: 500;
+  }
+  .sec-head .sub {
+    color: var(--text-mute); font-size: 12px; margin-left: auto;
+  }
+  .sec-head .chev {
+    color: var(--text-dim); font-size: 13px;
+    margin-left: 6px;
+    display: inline-flex; align-items: center; gap: 4px;
+    cursor: pointer;
+  }
+
+  /* -------- Card -------- */
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-left: 3px solid var(--border);
+    border-radius: 10px;
+    padding: 14px 16px 14px 14px;
+    margin-bottom: 10px;
+    transition: background .15s, border-color .15s, opacity .2s;
+    cursor: pointer;
+    position: relative;
+  }
+  .card:hover { background: var(--surface-2); }
+  .card.retention { border-left-color: var(--retention); }
+  .card.opportunity { border-left-color: var(--opportunity); }
+  .card.conversion { border-left-color: var(--conversion); }
+  .card.monitor { border-left-color: var(--monitor); }
+  .card.routed { border-left-color: var(--routed); opacity: .85; }
+  .card.routed:hover { opacity: 1; }
+  .card.scheduled, .card.sent, .card.dismissed {
+    opacity: .6;
+  }
+  .card.scheduled .actions .cta, .card.sent .actions .cta {
+    background: var(--surface-3); color: var(--text-dim); border: 1px solid var(--border);
+    pointer-events: none;
+  }
+
+  .row {
+    display: grid;
+    grid-template-columns: 48px 1.7fr 1.3fr 1fr auto;
+    align-items: center;
+    gap: 12px;
+  }
+
+  /* Priority chip */
+  .prio {
+    display: inline-flex; align-items: center; justify-content: center;
+    height: 28px; min-width: 38px; padding: 0 10px;
+    border-radius: 6px;
+    font-weight: 700; font-size: 12px;
+    letter-spacing: .02em;
+  }
+  .prio.p0 { background: var(--p0-soft); color: var(--p0); }
+  .prio.p1 { background: var(--p1-soft); color: var(--p1); }
+  .prio.p2 { background: var(--p2-soft); color: var(--p2); }
+  .prio.p3 { background: var(--p3-soft); color: var(--p3); }
+
+  .meta-line {
+    display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
+    margin-bottom: 4px;
+  }
+  .agency-name {
+    font-weight: 600; color: #fff; font-size: 14px;
+    cursor: pointer;
+  }
+  .agency-name:hover { text-decoration: underline; text-underline-offset: 3px; }
+  .agency-code {
+    color: var(--text-mute); font-size: 12px;
+  }
+  .tag {
+    display: inline-flex; align-items: center;
+    height: 20px; padding: 0 8px;
+    border-radius: 10px;
+    background: var(--chip-bg);
+    border: 1px solid var(--chip-border);
+    color: var(--text-dim);
+    font-size: 11px; font-weight: 500;
+  }
+  .tag.play.retention { color: var(--retention); border-color: rgba(239,68,68,.35); background: rgba(239,68,68,.08); }
+  .tag.play.opportunity { color: var(--opportunity); border-color: rgba(59,130,246,.35); background: rgba(59,130,246,.08); }
+  .tag.play.conversion { color: var(--conversion); border-color: rgba(139,92,246,.35); background: rgba(139,92,246,.08); }
+  .tag.play.monitor { color: var(--monitor); border-color: rgba(107,114,128,.35); background: rgba(107,114,128,.08); }
+  .tag.play.routed { color: var(--routed); border-color: rgba(245,158,11,.35); background: rgba(245,158,11,.08); }
+
+  .headline {
+    color: var(--text);
+    font-size: 13.5px;
+    font-weight: 500;
+    margin-top: 2px;
+    line-height: 1.4;
+  }
+  .headline b { color: #fff; font-weight: 700; }
+  .sub-meta {
+    color: var(--text-mute);
+    font-size: 11.5px;
+    margin-top: 4px;
+    display: flex; gap: 10px; align-items: center;
+  }
+  .sub-meta .sep { color: var(--text-mute); }
+  .sub-meta .stale { color: var(--p1); }
+
+  /* impact block */
+  .impact {
+    display: flex; flex-direction: column;
+    gap: 2px;
+  }
+  .impact .imp-lbl {
+    color: var(--text-mute); font-size: 11px; text-transform: uppercase;
+    font-weight: 600; letter-spacing: .04em;
+  }
+  .impact .imp-val {
+    color: #fff; font-weight: 700; font-size: 15px; letter-spacing: -.01em;
+  }
+  .impact .imp-val.risk { color: #FCA5A5; }
+  .impact .imp-val.upside { color: #86EFAC; }
+  .impact .imp-sub {
+    color: var(--text-dim); font-size: 11.5px;
+  }
+
+  /* status block */
+  .status {
+    display: flex; flex-direction: column; gap: 2px;
+  }
+  .status .st-lbl {
+    color: var(--text-mute); font-size: 11px; text-transform: uppercase;
+    font-weight: 600; letter-spacing: .04em;
+  }
+  .status .st-val {
+    color: var(--text); font-size: 13px; font-weight: 500;
+  }
+  .status .st-val.muted { color: var(--text-mute); font-weight: 400; font-style: italic; }
+  .status .st-val.done { color: var(--accent); }
+  .status .st-sub { color: var(--text-dim); font-size: 11.5px; }
+
+  /* actions */
+  .actions {
+    display: flex; align-items: center; gap: 6px;
+    position: relative;
+  }
+  .btn.cta {
+    height: 34px; padding: 0 14px;
+    border-radius: 8px;
+    background: var(--accent); color: #0B1017; font-weight: 600;
+    border: 0;
+  }
+  .btn.cta.secondary {
+    background: transparent; color: var(--text);
+    border: 1px solid var(--border);
+    font-weight: 500;
+  }
+  .btn.cta.ghost {
+    background: transparent; color: var(--text-dim);
+    border: 1px dashed var(--border);
+    font-weight: 500;
+  }
+  .btn.cta.disabled {
+    background: var(--surface-3); color: var(--text-mute); border: 0;
+    cursor: not-allowed;
+  }
+  .btn.more {
+    width: 34px; height: 34px; padding: 0;
+    background: transparent; color: var(--text-dim);
+    border: 1px solid var(--border);
+    display: grid; place-items: center;
+    border-radius: 8px;
+  }
+  .btn.more:hover { color: var(--text); background: var(--surface-2); }
+
+  /* expanded content */
+  .expand {
+    display: none;
+    margin-top: 14px;
+    padding-top: 14px;
+    border-top: 1px dashed var(--border);
+  }
+  .card.open .expand { display: block; }
+  .card.open { background: var(--surface-2); }
+
+  .signals {
+    display: flex; gap: 8px; flex-wrap: wrap;
+    margin-bottom: 12px;
+  }
+  .signal {
+    display: flex; align-items: center; gap: 8px;
+    background: var(--surface-3);
+    border: 1px solid var(--border);
+    padding: 6px 10px;
+    border-radius: 8px;
+    font-size: 12px;
+  }
+  .signal .k { color: var(--text-dim); }
+  .signal .v { color: #fff; font-weight: 600; }
+  .signal .v.neg { color: #FCA5A5; }
+  .signal .v.pos { color: #86EFAC; }
+
+  .block {
+    background: rgba(255,255,255,.02);
+    border: 1px solid var(--border-soft);
+    padding: 10px 12px;
+    border-radius: 8px;
+    margin-bottom: 10px;
+  }
+  .block .blbl {
+    color: var(--text-mute); font-size: 11px; text-transform: uppercase;
+    font-weight: 700; letter-spacing: .04em; margin-bottom: 4px;
+  }
+  .block .btxt { color: var(--text); font-size: 13px; line-height: 1.5; }
+  .block .btxt em { color: #FCD34D; font-style: normal; font-weight: 600; }
+
+  .expand-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+  }
+  .sec-actions {
+    display: flex; gap: 8px; flex-wrap: wrap;
+    margin-top: 6px;
+  }
+
+  /* Chevron expand indicator */
+  .expander {
+    color: var(--text-mute); font-size: 12px;
+    display: inline-flex; align-items: center; gap: 4px;
+    cursor: pointer; user-select: none;
+  }
+  .card.open .expander .caret { transform: rotate(180deg); }
+  .caret { transition: transform .2s; display: inline-block; }
+
+  /* routed banner */
+  .routed-banner {
+    display: flex; align-items: center; gap: 8px;
+    background: rgba(245,158,11,.08);
+    border: 1px dashed rgba(245,158,11,.35);
+    color: #FCD34D;
+    font-size: 12px;
+    padding: 6px 10px;
+    border-radius: 6px;
+    margin-top: 6px;
+    cursor: pointer;
+  }
+  .routed-banner:hover { background: rgba(245,158,11,.15); }
+
+  /* collapsed sec */
+  .sec-body.collapsed { display: none; }
+
+  /* Small helpers */
+  .muted { color: var(--text-dim); }
+  .tiny { font-size: 11.5px; }
+
+  /* ===================== MODALS, DRAWERS, POPOVERS ===================== */
+  .overlay {
+    position: fixed; inset: 0;
+    background: rgba(0,0,0,.55);
+    backdrop-filter: blur(2px);
+    z-index: 50;
+    display: none;
+  }
+  .overlay.open { display: block; }
+
+  .drawer {
+    position: fixed; right: 0; top: 0; bottom: 0;
+    width: 560px; max-width: 100vw;
+    background: var(--surface);
+    border-left: 1px solid var(--border);
+    box-shadow: -12px 0 40px rgba(0,0,0,.5);
+    z-index: 60;
+    transform: translateX(100%);
+    transition: transform .22s ease-out;
+    display: flex; flex-direction: column;
+    overflow: hidden;
+  }
+  .drawer.open { transform: translateX(0); }
+  .drawer.wide { width: 760px; }
+  .drawer .dhead {
+    padding: 16px 20px;
+    border-bottom: 1px solid var(--border);
+    display: flex; align-items: center; gap: 12px;
+    flex-shrink: 0;
+  }
+  .drawer .dhead h3 { margin: 0; font-size: 15px; color: #fff; font-weight: 600; }
+  .drawer .dhead .muted { font-size: 12px; color: var(--text-dim); }
+  .drawer .dhead .close {
+    margin-left: auto;
+    width: 30px; height: 30px; border-radius: 6px;
+    background: transparent; border: 0; color: var(--text-dim);
+    display: grid; place-items: center; font-size: 18px;
+    cursor: pointer;
+  }
+  .drawer .dhead .close:hover { background: var(--surface-3); color: #fff; }
+  .dbody {
+    padding: 18px 20px;
+    overflow-y: auto;
+    flex: 1;
+  }
+  .dfoot {
+    border-top: 1px solid var(--border);
+    padding: 14px 20px;
+    display: flex; justify-content: flex-end; gap: 10px;
+    flex-shrink: 0;
+  }
+
+  /* Bottom sheet */
+  .sheet {
+    position: fixed; left: 0; right: 0; bottom: 0;
+    z-index: 60;
+    background: var(--surface);
+    border-top: 1px solid var(--border);
+    box-shadow: 0 -12px 40px rgba(0,0,0,.5);
+    transform: translateY(100%);
+    transition: transform .22s ease-out;
+    max-height: 90vh;
+    display: flex; flex-direction: column;
+  }
+  .sheet.open { transform: translateY(0); }
+  .sheet-inner {
+    max-width: 1100px; margin: 0 auto; width: 100%;
+    padding: 20px 28px 24px;
+    display: flex; flex-direction: column;
+    max-height: 88vh; overflow: hidden;
+  }
+  .sheet .shead {
+    display: flex; align-items: center; gap: 10px;
+    margin-bottom: 16px;
+  }
+  .sheet .shead h3 { margin: 0; font-size: 16px; color: #fff; }
+  .sheet .shead .close {
+    margin-left: auto;
+    width: 32px; height: 32px; border-radius: 6px;
+    background: transparent; border: 0; color: var(--text-dim);
+    cursor: pointer; font-size: 18px;
+  }
+  .sheet .sbody { overflow-y: auto; }
+  .sheet .sfoot {
+    display: flex; justify-content: flex-end; gap: 10px;
+    margin-top: 16px; padding-top: 14px;
+    border-top: 1px solid var(--border);
+  }
+
+  /* Compose email body */
+  .compose-field {
+    display: grid; grid-template-columns: 60px 1fr; gap: 10px;
+    padding: 10px 0;
+    border-bottom: 1px solid var(--border-soft);
+  }
+  .compose-field label { color: var(--text-dim); font-size: 12px; padding-top: 4px; }
+  .compose-field input, .compose-field textarea {
+    background: transparent; border: 0; outline: 0; color: var(--text);
+    font-size: 13px; width: 100%; font-family: inherit; resize: vertical;
+  }
+  .compose-field textarea { min-height: 180px; }
+
+  /* Schedule slots grid */
+  .slots {
+    display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px;
+    margin-top: 8px;
+  }
+  .slot {
+    padding: 10px; border-radius: 8px;
+    border: 1px solid var(--border); background: var(--surface-2);
+    cursor: pointer; font-size: 12px; text-align: center;
+    transition: border-color .15s, background .15s;
+  }
+  .slot:hover { border-color: var(--chip-border); }
+  .slot.sel { border-color: var(--accent); background: var(--accent-soft); color: var(--accent); }
+  .slot .st { color: var(--text); font-weight: 600; }
+  .slot.sel .st { color: var(--accent); }
+  .slot .sd { color: var(--text-dim); font-size: 11px; margin-top: 2px; }
+  .slot .sai { display: inline-block; font-size: 10px; margin-top: 3px; color: var(--text-mute); }
+  .slot.sel .sai { color: var(--accent); font-weight: 600; }
+
+  /* Mini calendar */
+  .cal-mini {
+    display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px;
+    margin-top: 8px;
+  }
+  .cal-mini .cd {
+    padding: 8px 4px; border-radius: 6px; text-align: center; cursor: pointer;
+    font-size: 12px; background: var(--surface-2); color: var(--text);
+    border: 1px solid transparent;
+  }
+  .cal-mini .cd.sel { border-color: var(--accent); background: var(--accent-soft); color: var(--accent); font-weight: 600; }
+  .cal-mini .cd.mute { color: var(--text-mute); }
+  .cal-mini .cd:hover { border-color: var(--chip-border); }
+  .cal-mini .head {
+    color: var(--text-mute); font-size: 11px; text-align: center; padding: 4px 0;
+  }
+
+  /* Popover */
+  .popover {
+    position: absolute;
+    top: calc(100% + 6px); right: 0;
+    min-width: 220px;
+    background: var(--surface-2);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    box-shadow: 0 8px 24px rgba(0,0,0,.5);
+    z-index: 40;
+    padding: 6px;
+    display: none;
+  }
+  .popover.open { display: block; }
+  .popover button.mi {
+    width: 100%; text-align: left;
+    background: transparent; border: 0;
+    color: var(--text); font-size: 13px;
+    padding: 8px 10px; border-radius: 6px;
+    display: flex; align-items: center; gap: 10px;
+    cursor: pointer;
+  }
+  .popover button.mi:hover { background: var(--surface-3); }
+  .popover button.mi svg { color: var(--text-dim); }
+  .popover button.mi.danger { color: #FCA5A5; }
+  .popover hr { border: 0; height: 1px; background: var(--border-soft); margin: 4px 0; }
+
+  /* Toast */
+  .toasts {
+    position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%);
+    z-index: 80;
+    display: flex; flex-direction: column; gap: 8px;
+    align-items: center;
+  }
+  .toast {
+    background: var(--surface-2);
+    border: 1px solid var(--border);
+    border-left: 3px solid var(--accent);
+    color: var(--text);
+    padding: 10px 14px;
+    border-radius: 8px;
+    font-size: 13px;
+    display: flex; align-items: center; gap: 10px;
+    box-shadow: 0 4px 20px rgba(0,0,0,.4);
+    min-width: 280px;
+    animation: slideUp .2s ease-out;
+  }
+  .toast .undo {
+    color: var(--accent); font-weight: 600; cursor: pointer; font-size: 12px;
+    background: none; border: 0; padding: 0;
+  }
+  @keyframes slideUp {
+    from { transform: translateY(10px); opacity: 0; }
+    to { transform: translateY(0); opacity: 1; }
+  }
+
+  /* ===================== FLOW ANNOTATION ===================== */
+  .flow-hint {
+    display: none;
+    position: absolute;
+    top: -11px;
+    left: 50%; transform: translateX(-50%);
+    background: #0B1017;
+    border: 1px solid var(--compare-new);
+    color: var(--compare-new);
+    padding: 2px 8px;
+    border-radius: 10px;
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: .04em;
+    white-space: nowrap;
+    z-index: 8;
+    pointer-events: none;
+  }
+  body.flow-on .flow-hint { display: block; }
+
+  /* Compare callout panel */
+  .compare-panel {
+    display: none;
+    margin: 14px 0;
+    background: var(--surface-2);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 14px 16px;
+    font-size: 12.5px;
+  }
+  body.flow-on .compare-panel { display: block; }
+  .compare-panel .ct {
+    display: flex; align-items: center; gap: 8px;
+    font-size: 11px; text-transform: uppercase; letter-spacing: .06em;
+    font-weight: 700; color: var(--text-dim);
+    margin-bottom: 10px;
+  }
+  .cmp-grid {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 12px;
+  }
+  .cmp-col {
+    background: var(--surface);
+    border: 1px solid var(--border-soft);
+    border-radius: 8px;
+    padding: 10px 12px;
+  }
+  .cmp-col.old { border-left: 3px solid var(--compare-old); }
+  .cmp-col.new { border-left: 3px solid var(--compare-new); }
+  .cmp-col .hd {
+    display: flex; align-items: center; gap: 6px;
+    font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .06em;
+    margin-bottom: 6px;
+  }
+  .cmp-col.old .hd { color: var(--compare-old); }
+  .cmp-col.new .hd { color: var(--compare-new); }
+  .cmp-col ol {
+    margin: 0; padding-left: 18px;
+    color: var(--text); font-size: 12.5px; line-height: 1.55;
+  }
+  .cmp-col li { margin-bottom: 2px; }
+  .cmp-col .fin {
+    margin-top: 8px; padding-top: 8px; border-top: 1px dashed var(--border-soft);
+    color: var(--text-dim); font-size: 11.5px;
+  }
+  .cmp-col .fin b { color: #fff; }
+
+  /* Flow toolbar banner */
+  .flowbanner {
+    display: none;
+    position: fixed; top: 0; left: 56px; right: 52px;
+    background: linear-gradient(90deg, rgba(34,197,94,.1), rgba(139,92,246,.1));
+    border-bottom: 1px solid rgba(34,197,94,.3);
+    padding: 8px 20px;
+    font-size: 12px; color: var(--text);
+    z-index: 30;
+    align-items: center;
+    gap: 14px;
+  }
+  body.flow-on .flowbanner { display: flex; }
+  body.flow-on .main { padding-top: 58px; }
+  .flowbanner .tag-old, .flowbanner .tag-new {
+    display: inline-flex; align-items: center; gap: 4px;
+    font-weight: 600; font-size: 11px; padding: 2px 6px; border-radius: 4px;
+  }
+  .flowbanner .tag-old { background: rgba(245,158,11,.18); color: var(--compare-old); }
+  .flowbanner .tag-new { background: rgba(34,197,94,.18); color: var(--compare-new); }
+
+  /* Credit ops thread */
+  .thread-msg {
+    padding: 10px 12px;
+    border-radius: 8px;
+    margin-bottom: 8px;
+    font-size: 12.5px;
+    border: 1px solid var(--border-soft);
+  }
+  .thread-msg .meta {
+    font-size: 11px; color: var(--text-dim);
+    margin-bottom: 4px;
+  }
+  .thread-msg.theirs { background: var(--surface-2); }
+  .thread-msg.mine { background: var(--accent-soft); border-color: rgba(34,197,94,.3); }
+
+  /* Filter drawer */
+  .filt-section { margin-bottom: 18px; }
+  .filt-section .ft {
+    font-size: 11px; text-transform: uppercase; letter-spacing: .06em;
+    color: var(--text-mute); font-weight: 700; margin-bottom: 8px;
+  }
+  .filt-chips { display: flex; flex-wrap: wrap; gap: 6px; }
+  .filt-chip {
+    height: 28px; padding: 0 10px; border-radius: 14px;
+    border: 1px solid var(--border); background: var(--surface-2);
+    color: var(--text-dim); font-size: 12px;
+    display: inline-flex; align-items: center; gap: 6px; cursor: pointer;
+  }
+  .filt-chip.on { background: var(--accent-soft); border-color: var(--accent); color: var(--accent); }
+
+  /* Plan approval */
+  .plan-day {
+    background: var(--surface-2);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    margin-bottom: 10px;
+    overflow: hidden;
+  }
+  .plan-day .pd-head {
+    padding: 10px 12px;
+    display: flex; align-items: center; gap: 10px;
+    background: var(--surface-3);
+    font-size: 13px;
+  }
+  .plan-day .pd-head b { color: #fff; }
+  .plan-day .pd-body { padding: 4px 0; }
+  .plan-item {
+    display: grid; grid-template-columns: 16px 1fr auto; align-items: center;
+    gap: 10px; padding: 8px 12px;
+    border-top: 1px solid var(--border-soft);
+    font-size: 12.5px;
+  }
+  .plan-item:first-child { border-top: 0; }
+  .plan-item input[type=checkbox] { accent-color: var(--accent); }
+  .plan-item .pname { color: var(--text); }
+  .plan-item .pname .pcode { color: var(--text-mute); font-size: 11px; margin-left: 4px; }
+  .plan-item .pwhen { color: var(--text-dim); font-size: 11.5px; }
+  .plan-item .ptag { font-size: 11px; padding: 2px 6px; border-radius: 4px; }
+
+  /* Agency peek panel detail body */
+  .peek-meta {
+    display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px;
+    margin-bottom: 14px;
+  }
+  .peek-meta .pm {
+    background: var(--surface-2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 10px;
+  }
+  .peek-meta .pm .lbl { font-size: 11px; color: var(--text-mute); text-transform: uppercase; letter-spacing: .05em; }
+  .peek-meta .pm .val { color: #fff; font-size: 15px; font-weight: 600; margin-top: 4px; }
+  .peek-meta .pm .sub { color: var(--text-dim); font-size: 11.5px; margin-top: 2px; }
+
+  /* Responsive */
+  @media (max-width: 1100px) {
+    .row { grid-template-columns: 40px 1fr 1fr auto; }
+    .row .status { display: none; }
+    .kpis { grid-template-columns: repeat(2, 1fr); }
+    .slots { grid-template-columns: repeat(2, 1fr); }
+  }
+</style>
+</head>
+<body>
+
+<!-- Flow annotation banner -->
+<div class="flowbanner">
+  <b style="color:#fff;">Flow annotation mode</b>
+  <span class="tag-old">Original</span>
+  <span class="tag-new">Redesign</span>
+  <span style="color: var(--text-dim);">— Every interactive control shows the shortened click path + a callout under the first occurrence of each flow.</span>
+</div>
+
+<div class="app">
+  <!-- Left rail -->
+  <aside class="rail">
+    <div class="logo">A</div>
+    <div class="ricon active" title="Weekly plan">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 3v18"/><path d="M3 9h18"/><rect x="3" y="3" width="18" height="18" rx="2"/></svg>
+    </div>
+    <div class="ricon" title="Agencies">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21V7a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v14"/><path d="M17 9h4v12"/><path d="M7 10h2"/><path d="M7 14h2"/><path d="M11 10h2"/><path d="M11 14h2"/></svg>
+    </div>
+    <div class="ricon" title="Calendar">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+    </div>
+    <div class="ricon" title="Insights">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="M7 14l4-4 4 4 5-6"/></svg>
+    </div>
+    <div class="ricon" title="Contacts">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+    </div>
+  </aside>
+
+  <!-- Main -->
+  <main class="main">
+    <!-- Header -->
+    <div class="hdr-top">
+      <div>
+        <div class="hdr-title">
+          <span class="spark">✦</span>
+          Atlas — Weekly Plan
+        </div>
+        <div class="hdr-sub">
+          Week of <b>19 May 2026</b> · AI-generated for <b>Eric Chen</b> · 25 agencies reviewed ·
+          <span style="color: var(--accent);">17 actionable</span>,
+          <span class="muted">5 routed</span>,
+          <span class="muted">3 monitor only</span>
+        </div>
+      </div>
+      <div class="hdr-actions">
+        <div class="toggle-wrap" onclick="toggleFlowMode()" title="Show original vs new flow callouts">
+          <div class="switch" id="flowSwitch"></div>
+          <span><b>Flow annotations</b></span>
+        </div>
+        <button class="btn" onclick="openDrawer('hunter')">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg>
+          Hunter mode
+        </button>
+        <div style="position: relative;">
+          <button class="btn primary" onclick="openDrawer('planNext')">
+            Plan my next week
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="M13 5l7 7-7 7"/></svg>
+          </button>
+          <div class="flow-hint">New: side drawer · 1 click</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Compare callout: Plan Next Week -->
+    <div class="compare-panel">
+      <div class="ct">Flow 1 · "Plan my next week"</div>
+      <div class="cmp-grid">
+        <div class="cmp-col old">
+          <div class="hd">Original</div>
+          <ol>
+            <li>Click "Plan my next week" → full-page load of AI plan</li>
+            <li>Scroll through 25-row table</li>
+            <li>Switch to calendar tab → another full-page load</li>
+            <li>Drag each play onto a slot</li>
+          </ol>
+          <div class="fin"><b>≥ 4 clicks · 2 page loads · no explicit sign-off.</b></div>
+        </div>
+        <div class="cmp-col new">
+          <div class="hd">Redesign</div>
+          <ol>
+            <li>Click "Plan my next week" — right drawer slides over, same page</li>
+            <li>AI has pre-slotted plays by day; KAM reviews</li>
+            <li>Uncheck anything wrong, then Approve</li>
+          </ol>
+          <div class="fin"><b>1 click · 0 page loads · explicit approve/reject.</b></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- KPI cards -->
+    <div class="kpis">
+      <div class="kpi protect">
+        <div class="lbl">GTV at risk — protected</div>
+        <div class="val">$12,400 <span style="font-size: 13px; color: var(--text-dim); font-weight: 500;">/ $18,200</span></div>
+        <div class="sub">6 of 9 retention plays closed</div>
+        <div class="bar"><span style="width: 68%"></span></div>
+      </div>
+      <div class="kpi unlock">
+        <div class="lbl">GTV opportunity — unlocked</div>
+        <div class="val">$4,200 <span style="font-size: 13px; color: var(--text-dim); font-weight: 500;">/ $9,000</span></div>
+        <div class="sub">3 of 7 opportunity plays closed</div>
+        <div class="bar"><span style="width: 46%; background: var(--p2);"></span></div>
+      </div>
+      <div class="kpi">
+        <div class="lbl">Actions completed</div>
+        <div class="val">12 <span style="font-size: 13px; color: var(--text-dim); font-weight: 500;">/ 20</span></div>
+        <div class="sub">3 overdue · 5 due this week</div>
+        <div class="bar"><span style="width: 60%"></span></div>
+      </div>
+      <div class="kpi">
+        <div class="lbl">Response rate (agency)</div>
+        <div class="val">74%</div>
+        <div class="sub">+8 pts vs last week</div>
+        <div class="bar"><span style="width: 74%; background: #8B5CF6;"></span></div>
+      </div>
+    </div>
+
+    <!-- Day ladder -->
+    <div class="daybar">
+      <div class="day active">
+        <div class="dname">Today <span>Mon, 19 May</span></div>
+        <div class="dcount">3</div>
+      </div>
+      <div class="day">
+        <div class="dname">Tue <span>20 May</span></div>
+        <div class="dcount">4</div>
+      </div>
+      <div class="day zero">
+        <div class="dname">Wed <span>21 May</span></div>
+        <div class="dcount">0</div>
+      </div>
+      <div class="day">
+        <div class="dname">Thu <span>22 May</span></div>
+        <div class="dcount">2</div>
+      </div>
+      <div class="day">
+        <div class="dname">Fri <span>23 May</span></div>
+        <div class="dcount">3</div>
+      </div>
+    </div>
+
+    <!-- Toolbar -->
+    <div class="toolbar">
+      <div class="search">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+        <input placeholder="Search by agency name or code" />
+      </div>
+      <button class="chipbtn on">Actionable · 17</button>
+      <button class="chipbtn">Retention · 6</button>
+      <button class="chipbtn">Opportunity · 7</button>
+      <button class="chipbtn">Conversion · 4</button>
+      <button class="btn sm">Sort: GTV at risk ↓</button>
+      <div style="position: relative;">
+        <button class="btn sm" onclick="openDrawer('filters')">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/></svg>
+          Apply filters
+        </button>
+        <div class="flow-hint">New: inline drawer + live count</div>
+      </div>
+    </div>
+
+    <!-- Compare callout: Filters -->
+    <div class="compare-panel">
+      <div class="ct">Flow 2 · Filter / sort</div>
+      <div class="cmp-grid">
+        <div class="cmp-col old">
+          <div class="hd">Original</div>
+          <ol>
+            <li>Click "Apply filters" — opens a modal</li>
+            <li>Pick from a dropdown list</li>
+            <li>Click Apply → modal closes, list reloads</li>
+            <li>No preview of how many results will remain</li>
+          </ol>
+          <div class="fin"><b>3 clicks · blind filtering.</b></div>
+        </div>
+        <div class="cmp-col new">
+          <div class="hd">Redesign</div>
+          <ol>
+            <li>Filter drawer opens inline — list stays visible on the left</li>
+            <li>Chip-based; tap to toggle; counts update live as you click</li>
+            <li>Saved views (e.g. "Saudi P0s", "Credit to reopen") shown at the top</li>
+          </ol>
+          <div class="fin"><b>Live preview · saved views · no modal trap.</b></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===================== DO TODAY ===================== -->
+    <section class="section">
+      <div class="sec-head">
+        <span class="dot" style="background: var(--p0)"></span>
+        <h2>Do today</h2>
+        <span class="count">· 3 plays · $8,200 at risk</span>
+        <span class="sub">Call these before lunch.</span>
+      </div>
+
+      <!-- Compare callout: Card click / expand -->
+      <div class="compare-panel">
+        <div class="ct">Flow 3 · Click a card / "View details"</div>
+        <div class="cmp-grid">
+          <div class="cmp-col old">
+            <div class="hd">Original</div>
+            <ol>
+              <li>Click "View Details" at the end of a row</li>
+              <li>Full-page nav to an Insights screen — list context is gone</li>
+              <li>Scroll through long sections (17 headings)</li>
+              <li>Back button to return</li>
+            </ol>
+            <div class="fin"><b>Full page load every time. ~17 sections per card.</b></div>
+          </div>
+          <div class="cmp-col new">
+            <div class="hd">Redesign</div>
+            <ol>
+              <li>Click anywhere on the card — it expands inline</li>
+              <li>Signal chips + Lead / Ask blocks appear below the row</li>
+              <li>Need more? Click the agency name → peek panel slides in from the right</li>
+            </ol>
+            <div class="fin"><b>No context loss. 3 chips + 2 lines replace 17 sections.</b></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="sec-body">
+
+        <!-- Card 1 -->
+        <div class="card retention" data-agency="premier" onclick="toggleCard(event, this)">
+          <div class="row">
+            <div class="prio p0">P0</div>
+            <div>
+              <div class="meta-line">
+                <span class="agency-name" onclick="event.stopPropagation(); openDrawer('agency', 'premier')">Premier Business Travel</span>
+                <span class="agency-code">#PRB2938</span>
+                <span class="tag">Large · $180K LTM</span>
+                <span class="tag play retention">Retention recovery</span>
+              </div>
+              <div class="headline">Agency <b>-25% WoW</b> while Saudi market grew <b>+50%</b> — share loss, not market slowdown.</div>
+              <div class="sub-meta">
+                <span>📍 Saudi Arabia</span>
+                <span class="sep">·</span>
+                <span>Last booking 3 days ago</span>
+                <span class="sep">·</span>
+                <span class="stale">⚠︎ Flagged 3 days ago — no action yet</span>
+              </div>
+            </div>
+            <div class="impact">
+              <div class="imp-lbl">At risk / month</div>
+              <div class="imp-val risk">$2,500</div>
+              <div class="imp-sub">Protect</div>
+            </div>
+            <div class="status">
+              <div class="st-lbl">Suggested</div>
+              <div class="st-val">Mon 12:15 – 12:45 PM</div>
+              <div class="st-sub">Commercial Director · Ahmad K.</div>
+            </div>
+            <div class="actions">
+              <button class="btn cta" onclick="event.stopPropagation(); openSchedule('premier')">Schedule meeting</button>
+              <button class="btn more" onclick="event.stopPropagation(); togglePopover(event, this, 'premier')">⋯</button>
+              <div class="flow-hint">New: bottom sheet · 1 click</div>
+            </div>
+          </div>
+          <div class="expand">
+            <div class="signals">
+              <div class="signal"><span class="k">WoW bookings</span><span class="v neg">-25%</span></div>
+              <div class="signal"><span class="k">Saudi market WoW</span><span class="v pos">+50.6%</span></div>
+              <div class="signal"><span class="k">Dubai bookings MoM</span><span class="v neg">-100%</span></div>
+              <div class="signal"><span class="k">Credit used</span><span class="v">41% / $400K</span></div>
+              <div class="signal"><span class="k">L2B</span><span class="v">0.16 (+18% WoW)</span></div>
+            </div>
+            <div class="expand-grid">
+              <div class="block">
+                <div class="blbl">Lead with this</div>
+                <div class="btxt">"The Saudi market grew <em>50% last week</em> — I wanted to walk through what's working for other partners and where we can help you catch more of that."</div>
+              </div>
+              <div class="block">
+                <div class="blbl">Ask in the meeting</div>
+                <div class="btxt">Dubai bookings dropped 100% MoM while the market held. <em>What changed for those customers?</em> Are they quoting elsewhere?</div>
+              </div>
+            </div>
+            <div class="sec-actions">
+              <button class="btn xs" onclick="event.stopPropagation(); openDrawer('agency','premier')">View full briefing →</button>
+              <button class="btn xs" onclick="event.stopPropagation(); openDrawer('outcome','premier')">Log outcome</button>
+              <button class="btn xs" onclick="event.stopPropagation(); quickAction('snooze','premier')">Snooze 7 days</button>
+              <button class="btn xs" onclick="event.stopPropagation(); quickAction('reassign','premier')">Reassign</button>
+              <button class="btn xs" onclick="event.stopPropagation(); openDrawer('dismiss','premier')">Dismiss (with reason)</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Card 2 -->
+        <div class="card retention" data-agency="nasar" onclick="toggleCard(event, this)">
+          <div class="row">
+            <div class="prio p0">P0</div>
+            <div>
+              <div class="meta-line">
+                <span class="agency-name" onclick="event.stopPropagation(); openDrawer('agency','nasar')">Nasar Abdullah Travel & Tourism</span>
+                <span class="agency-code">#32851</span>
+                <span class="tag">Value · Jeddah</span>
+                <span class="tag play retention">Retention recovery</span>
+              </div>
+              <div class="headline">Agency <b>-71.9% WoW</b> and <b>-98.4% MoM</b>, market <b>+50%</b> — healthy credit (22%), signs of cooling relationship.</div>
+              <div class="sub-meta">
+                <span>📍 Saudi Arabia</span>
+                <span class="sep">·</span>
+                <span>16 bookings last 30d (normal: 80)</span>
+                <span class="sep">·</span>
+                <span class="stale">⚠︎ 2nd consecutive week flagged</span>
+              </div>
+            </div>
+            <div class="impact">
+              <div class="imp-lbl">At risk / month</div>
+              <div class="imp-val risk">$4,200</div>
+              <div class="imp-sub">Protect</div>
+            </div>
+            <div class="status">
+              <div class="st-lbl">Suggested</div>
+              <div class="st-val">Mon 2:00 – 2:30 PM</div>
+              <div class="st-sub">Owner · Nasar A.</div>
+            </div>
+            <div class="actions">
+              <button class="btn cta" onclick="event.stopPropagation(); openSchedule('nasar')">Schedule meeting</button>
+              <button class="btn more" onclick="event.stopPropagation(); togglePopover(event, this, 'nasar')">⋯</button>
+            </div>
+          </div>
+          <div class="expand">
+            <div class="signals">
+              <div class="signal"><span class="k">Bookings vs normal</span><span class="v neg">16 / 80</span></div>
+              <div class="signal"><span class="k">Market WoW</span><span class="v pos">+50.6%</span></div>
+              <div class="signal"><span class="k">Login recency</span><span class="v">9 days ago</span></div>
+              <div class="signal"><span class="k">Credit used</span><span class="v">22.1%</span></div>
+            </div>
+            <div class="expand-grid">
+              <div class="block">
+                <div class="blbl">Lead with this</div>
+                <div class="btxt">"I noticed you haven't logged in since the 10th — wanted to check in and see if there's anything blocking you, and walk through what's working for other Jeddah partners this month."</div>
+              </div>
+              <div class="block">
+                <div class="blbl">Ask in the meeting</div>
+                <div class="btxt">Bookings are down while Jeddah is up. <em>Are they quoting with someone else, or is demand soft on their specific segment?</em></div>
+              </div>
+            </div>
+            <div class="sec-actions">
+              <button class="btn xs" onclick="event.stopPropagation(); openDrawer('agency','nasar')">View full briefing →</button>
+              <button class="btn xs" onclick="event.stopPropagation(); openDrawer('outcome','nasar')">Log outcome</button>
+              <button class="btn xs" onclick="event.stopPropagation(); quickAction('snooze','nasar')">Snooze 7 days</button>
+              <button class="btn xs" onclick="event.stopPropagation(); openDrawer('dismiss','nasar')">Dismiss</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Card 3 -->
+        <div class="card opportunity" data-agency="binghaith" onclick="toggleCard(event, this)">
+          <div class="row">
+            <div class="prio p1">P1</div>
+            <div>
+              <div class="meta-line">
+                <span class="agency-name" onclick="event.stopPropagation(); openDrawer('agency','binghaith')">Binghaith Travel Agency</span>
+                <span class="agency-code">#1056</span>
+                <span class="tag">Large · $410K LTM</span>
+                <span class="tag play opportunity">Opportunity — destination mix</span>
+              </div>
+              <div class="headline"><b>Dubai bookings -100% MoM</b> while market stable. Strong Makkah/Riyadh search activity — push a targeted promo.</div>
+              <div class="sub-meta">
+                <span>📍 Saudi Arabia</span>
+                <span class="sep">·</span>
+                <span>203 searches · 29 bookings (30d)</span>
+                <span class="sep">·</span>
+                <span>Active this week</span>
+              </div>
+            </div>
+            <div class="impact">
+              <div class="imp-lbl">Upside / month</div>
+              <div class="imp-val upside">$1,500</div>
+              <div class="imp-sub">Unlock</div>
+            </div>
+            <div class="status">
+              <div class="st-lbl">Next step</div>
+              <div class="st-val">Send promo email</div>
+              <div class="st-sub">Template: "Makkah + Riyadh push"</div>
+            </div>
+            <div class="actions">
+              <button class="btn cta secondary" onclick="event.stopPropagation(); openEmail('binghaith')">Send email</button>
+              <button class="btn more" onclick="event.stopPropagation(); togglePopover(event, this, 'binghaith')">⋯</button>
+              <div class="flow-hint">New: side drawer · template pre-filled</div>
+            </div>
+          </div>
+          <div class="expand">
+            <div class="signals">
+              <div class="signal"><span class="k">Makkah searches</span><span class="v pos">+12% WoW</span></div>
+              <div class="signal"><span class="k">Riyadh searches</span><span class="v pos">+9% WoW</span></div>
+              <div class="signal"><span class="k">Dubai bookings MoM</span><span class="v neg">-100%</span></div>
+              <div class="signal"><span class="k">Top supplier share</span><span class="v">EANV2 22.8%</span></div>
+            </div>
+            <div class="expand-grid">
+              <div class="block">
+                <div class="blbl">Lead with this</div>
+                <div class="btxt">"Your Makkah and Riyadh searches are up this week — I'm sending a curated list of higher-margin properties we've just pricematch'd there."</div>
+              </div>
+              <div class="block">
+                <div class="blbl">Optional follow-up</div>
+                <div class="btxt">If promo hits, layer a conversation on Dubai — find out why it dropped off. Could signal a new competitor or channel shift.</div>
+              </div>
+            </div>
+            <div class="sec-actions">
+              <button class="btn xs" onclick="event.stopPropagation(); openDrawer('agency','binghaith')">View full briefing →</button>
+              <button class="btn xs" onclick="event.stopPropagation(); openEmail('binghaith', true)">Edit template</button>
+              <button class="btn xs" onclick="event.stopPropagation(); quickAction('snooze','binghaith')">Snooze</button>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- Compare callout: Schedule Meeting -->
+    <div class="compare-panel">
+      <div class="ct">Flow 4 · Schedule a meeting</div>
+      <div class="cmp-grid">
+        <div class="cmp-col old">
+          <div class="hd">Original</div>
+          <ol>
+            <li>Click "Schedule Meeting"</li>
+            <li>Full-page load → "Plan My Next Week" calendar view</li>
+            <li>Click a day</li>
+            <li>Click a slot</li>
+            <li>Confirm → "Meeting Has Been Created" screen</li>
+            <li>Back to Weekly Plan (another page load)</li>
+          </ol>
+          <div class="fin"><b>5 clicks · 3 page loads.</b></div>
+        </div>
+        <div class="cmp-col new">
+          <div class="hd">Redesign</div>
+          <ol>
+            <li>Click "Schedule meeting" — bottom sheet slides up</li>
+            <li>AI slot (Mon 12:15 PM) is pre-selected; 3 alternates offered</li>
+            <li>Confirm → toast "Scheduled", card flips to "Scheduled" state, day ladder updates</li>
+          </ol>
+          <div class="fin"><b>1 click if the AI slot is fine · 0 page loads · card stays in view.</b></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Compare callout: Send Email -->
+    <div class="compare-panel">
+      <div class="ct">Flow 5 · Send email</div>
+      <div class="cmp-grid">
+        <div class="cmp-col old">
+          <div class="hd">Original</div>
+          <ol>
+            <li>Click "Send Email"</li>
+            <li>Full page loads a generic composer</li>
+            <li>KAM rewrites a generic opener</li>
+            <li>Send → confirmation page → back</li>
+          </ol>
+          <div class="fin"><b>Default template is defensive ("I noticed your GTV has declined…") — most KAMs rewrite it anyway.</b></div>
+        </div>
+        <div class="cmp-col new">
+          <div class="hd">Redesign</div>
+          <ol>
+            <li>Click "Send email" — side drawer with pre-filled template</li>
+            <li>Subject + body use "Lead with this" from the card (market-positive framing)</li>
+            <li>Tweak inline, Send — toast, card updates to "Email sent today"</li>
+          </ol>
+          <div class="fin"><b>Templates derive from the briefing fact, not a generic opener.</b></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===================== THIS WEEK ===================== -->
+    <section class="section">
+      <div class="sec-head">
+        <span class="dot" style="background: var(--p2)"></span>
+        <h2>This week</h2>
+        <span class="count">· 4 plays · $6,400 at risk, $2,700 upside</span>
+        <span class="sub">Sequence for Tue–Fri.</span>
+      </div>
+      <div class="sec-body">
+
+        <!-- Card 4 -->
+        <div class="card opportunity" data-agency="skylink" onclick="toggleCard(event, this)">
+          <div class="row">
+            <div class="prio p1">P1</div>
+            <div>
+              <div class="meta-line">
+                <span class="agency-name" onclick="event.stopPropagation(); openDrawer('agency','skylink')">SKYLINK Travel & Tours</span>
+                <span class="agency-code">#2429</span>
+                <span class="tag">Large · Dar es Salaam</span>
+                <span class="tag play conversion">Conversion recovery</span>
+              </div>
+              <div class="headline">MoM GTV <b>-61%</b> but <b>WoW +5%</b> — recovery starting. Searches up, bookings flat: conversion friction, not demand.</div>
+              <div class="sub-meta">
+                <span>📍 Tanzania</span>
+                <span class="sep">·</span>
+                <span>12 bookings last 30d</span>
+                <span class="sep">·</span>
+                <span>Active yesterday</span>
+              </div>
+            </div>
+            <div class="impact">
+              <div class="imp-lbl">Upside / month</div>
+              <div class="imp-val upside">$1,200</div>
+              <div class="imp-sub">Unlock</div>
+            </div>
+            <div class="status">
+              <div class="st-lbl">Suggested</div>
+              <div class="st-val">Thu 10:00 – 10:20 AM</div>
+              <div class="st-sub">Short rates-review call</div>
+            </div>
+            <div class="actions">
+              <button class="btn cta secondary" onclick="event.stopPropagation(); openSchedule('skylink')">Schedule call</button>
+              <button class="btn more" onclick="event.stopPropagation(); togglePopover(event, this, 'skylink')">⋯</button>
+            </div>
+          </div>
+          <div class="expand">
+            <div class="signals">
+              <div class="signal"><span class="k">MoM GTV</span><span class="v neg">-61%</span></div>
+              <div class="signal"><span class="k">WoW GTV</span><span class="v pos">+5%</span></div>
+              <div class="signal"><span class="k">Searches WoW</span><span class="v pos">+18%</span></div>
+              <div class="signal"><span class="k">L2B (conv)</span><span class="v neg">0.06 (low)</span></div>
+            </div>
+            <div class="expand-grid">
+              <div class="block">
+                <div class="blbl">Lead with this</div>
+                <div class="btxt">"Your search volume is trending back up — let's walk through the quotes that aren't closing and see if there's a rate or product gap we can close."</div>
+              </div>
+              <div class="block">
+                <div class="blbl">Bring to the call</div>
+                <div class="btxt">Top-3 searched hotels where your L2B is below market average. Consider opening up AGODA inventory.</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Card 5 -->
+        <div class="card retention" data-agency="meem" onclick="toggleCard(event, this)">
+          <div class="row">
+            <div class="prio p2">P2</div>
+            <div>
+              <div class="meta-line">
+                <span class="agency-name" onclick="event.stopPropagation(); openDrawer('agency','meem')">MEEM International Traders</span>
+                <span class="agency-code">#112790</span>
+                <span class="tag">Value · UK</span>
+                <span class="tag play retention">Retention — supplier mix</span>
+              </div>
+              <div class="headline"><b>Makkah/Madinah bookings -70% MoM</b> with top suppliers AGODA and KIZANELITE both down &gt;75%.</div>
+              <div class="sub-meta">
+                <span>📍 United Kingdom</span>
+                <span class="sep">·</span>
+                <span>7 bookings last 30d</span>
+                <span class="sep">·</span>
+                <span>Last booking 11 days ago</span>
+              </div>
+            </div>
+            <div class="impact">
+              <div class="imp-lbl">At risk / month</div>
+              <div class="imp-val risk">$1,800</div>
+              <div class="imp-sub">Protect</div>
+            </div>
+            <div class="status">
+              <div class="st-lbl">Next step</div>
+              <div class="st-val">Send check-in email</div>
+              <div class="st-sub">Template: "Supplier gap"</div>
+            </div>
+            <div class="actions">
+              <button class="btn cta secondary" onclick="event.stopPropagation(); openEmail('meem')">Send email</button>
+              <button class="btn more" onclick="event.stopPropagation(); togglePopover(event, this, 'meem')">⋯</button>
+            </div>
+          </div>
+          <div class="expand">
+            <div class="signals">
+              <div class="signal"><span class="k">AGODA bookings MoM</span><span class="v neg">-75%</span></div>
+              <div class="signal"><span class="k">KIZANELITE bookings MoM</span><span class="v neg">-75%</span></div>
+              <div class="signal"><span class="k">Makkah bookings MoM</span><span class="v neg">-70%</span></div>
+              <div class="signal"><span class="k">Login recency</span><span class="v">11 days</span></div>
+            </div>
+            <div class="expand-grid">
+              <div class="block">
+                <div class="blbl">Lead with this</div>
+                <div class="btxt">"Wanted to check if something has changed on the Makkah side — your AGODA and KIZANELITE bookings are both down sharply, which doesn't match what we're seeing in the UK market."</div>
+              </div>
+              <div class="block">
+                <div class="blbl">Offer</div>
+                <div class="btxt">A 20-min call with our supplier team to open up HOTELBEDS inventory for Makkah/Madinah.</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Card 6 -->
+        <div class="card retention" data-agency="alfahad" onclick="toggleCard(event, this)">
+          <div class="row">
+            <div class="prio p2">P2</div>
+            <div>
+              <div class="meta-line">
+                <span class="agency-name" onclick="event.stopPropagation(); openDrawer('agency','alfahad')">Al Fahad Travel</span>
+                <span class="agency-code">#2534</span>
+                <span class="tag">Value · Riyadh</span>
+                <span class="tag play retention">Retention — recovery watch</span>
+              </div>
+              <div class="headline">YoY <b>-70%</b>, MoM <b>-54%</b>, but 7-day bookings <b>+50%</b>. Recovery starting, relationship check suggested.</div>
+              <div class="sub-meta">
+                <span>📍 Saudi Arabia</span>
+                <span class="sep">·</span>
+                <span>5 bookings last 30d</span>
+                <span class="sep">·</span>
+                <span>Active 2 days ago</span>
+              </div>
+            </div>
+            <div class="impact">
+              <div class="imp-lbl">Recovery</div>
+              <div class="imp-val upside">$900</div>
+              <div class="imp-sub">Unlock</div>
+            </div>
+            <div class="status">
+              <div class="st-lbl">Next step</div>
+              <div class="st-val">Send email</div>
+              <div class="st-sub">Low-touch check-in</div>
+            </div>
+            <div class="actions">
+              <button class="btn cta secondary" onclick="event.stopPropagation(); openEmail('alfahad')">Send email</button>
+              <button class="btn more" onclick="event.stopPropagation(); togglePopover(event, this, 'alfahad')">⋯</button>
+            </div>
+          </div>
+          <div class="expand">
+            <div class="signals">
+              <div class="signal"><span class="k">YoY bookings</span><span class="v neg">-70%</span></div>
+              <div class="signal"><span class="k">7d bookings</span><span class="v pos">+50%</span></div>
+              <div class="signal"><span class="k">Market WoW</span><span class="v pos">+50.6%</span></div>
+            </div>
+            <div class="block">
+              <div class="blbl">Note</div>
+              <div class="btxt">Low-volume account; current signal is modest. Send a light-touch email rather than scheduling a meeting — avoid over-indexing on 5-booking base.</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Card 7 -->
+        <div class="card opportunity" data-agency="first" onclick="toggleCard(event, this)">
+          <div class="row">
+            <div class="prio p2">P2</div>
+            <div>
+              <div class="meta-line">
+                <span class="agency-name" onclick="event.stopPropagation(); openDrawer('agency','first')">First Travel France</span>
+                <span class="agency-code">#130619</span>
+                <span class="tag">Value · Paris</span>
+                <span class="tag play opportunity">Opportunity — Loches destination</span>
+              </div>
+              <div class="headline">Bookings to zero WoW; key suppliers EANV2 and BOOKINGDOTCOM both down &gt;80% — investigate supplier issue.</div>
+              <div class="sub-meta">
+                <span>📍 France</span>
+                <span class="sep">·</span>
+                <span>Credit 21% used — healthy</span>
+                <span class="sep">·</span>
+                <span>Last booking 6 days ago</span>
+              </div>
+            </div>
+            <div class="impact">
+              <div class="imp-lbl">Potential</div>
+              <div class="imp-val upside">$1,600</div>
+              <div class="imp-sub">Unlock</div>
+            </div>
+            <div class="status">
+              <div class="st-lbl">Next step</div>
+              <div class="st-val">Quick call</div>
+              <div class="st-sub">Fri 3:00 – 3:15 PM</div>
+            </div>
+            <div class="actions">
+              <button class="btn cta secondary" onclick="event.stopPropagation(); openSchedule('first')">Schedule call</button>
+              <button class="btn more" onclick="event.stopPropagation(); togglePopover(event, this, 'first')">⋯</button>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- Compare callout: ⋯ menu -->
+    <div class="compare-panel">
+      <div class="ct">Flow 6 · Snooze / dismiss / reassign (the "⋯" menu)</div>
+      <div class="cmp-grid">
+        <div class="cmp-col old">
+          <div class="hd">Original</div>
+          <ol>
+            <li>No explicit dismiss / snooze on the card</li>
+            <li>KAM has to click "View Details" → find it in-page, or ignore the flag (and see it again next week)</li>
+          </ol>
+          <div class="fin"><b>Flags pile up. Same agency re-surfaces weekly with no feedback loop.</b></div>
+        </div>
+        <div class="cmp-col new">
+          <div class="hd">Redesign</div>
+          <ol>
+            <li>Click "⋯" on any card — popover with Snooze, Dismiss (with reason), Reassign, Route to credit ops, Mark done</li>
+            <li>Dismiss requires a reason → this becomes training signal for the engine</li>
+            <li>Snooze hides for N days, then returns only if signal worsens</li>
+          </ol>
+          <div class="fin"><b>KAM can clear noise in one click; engine learns from dismiss reasons.</b></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===================== MONITOR ===================== -->
+    <section class="section">
+      <div class="sec-head">
+        <span class="dot" style="background: var(--monitor)"></span>
+        <h2>Monitor only</h2>
+        <span class="count">· 3 plays · no action this week</span>
+        <span class="sub" style="margin-left:auto">Signal is noise or healthy — flagged for visibility.</span>
+        <span class="chev" onclick="toggleSec(this)">Show <span class="caret">▾</span></span>
+      </div>
+      <div class="sec-body collapsed">
+        <div class="card monitor" data-agency="blue" onclick="toggleCard(event, this)">
+          <div class="row">
+            <div class="prio p3">—</div>
+            <div>
+              <div class="meta-line">
+                <span class="agency-name" onclick="event.stopPropagation(); openDrawer('agency','blue')">Blue Horizon Travel</span>
+                <span class="agency-code">#79068</span>
+                <span class="tag">Large · Jeddah</span>
+                <span class="tag play monitor">Healthy — flagged in error</span>
+              </div>
+              <div class="headline">WoW <b>+726%</b>, YoY <b>+38%</b>, MoM only -20%. Agency is performing — no action needed.</div>
+            </div>
+            <div class="impact"><div class="imp-lbl">Status</div><div class="imp-val" style="color: var(--accent)">Healthy</div></div>
+            <div class="status"><div class="st-lbl">Rec.</div><div class="st-val muted">No action</div></div>
+            <div class="actions">
+              <button class="btn cta ghost" onclick="event.stopPropagation(); quickAction('dismiss','blue')">Dismiss</button>
+            </div>
+          </div>
+        </div>
+        <div class="card monitor" data-agency="antaeus" onclick="toggleCard(event, this)">
+          <div class="row">
+            <div class="prio p3">—</div>
+            <div>
+              <div class="meta-line">
+                <span class="agency-name" onclick="event.stopPropagation(); openDrawer('agency','antaeus')">ANTAEUS Travel Group</span>
+                <span class="agency-code">#28716</span>
+                <span class="tag">Value · Athens</span>
+                <span class="tag play monitor">Low volume — noise</span>
+              </div>
+              <div class="headline">WoW -20.7%, MoM +14.1% on a <b>7-booking</b> base. Likely single-client movement.</div>
+            </div>
+            <div class="impact"><div class="imp-lbl">Status</div><div class="imp-val muted">Watch</div></div>
+            <div class="status"><div class="st-lbl">Rec.</div><div class="st-val muted">Re-check next week</div></div>
+            <div class="actions"><button class="btn cta ghost" onclick="event.stopPropagation(); quickAction('snooze','antaeus')">Snooze</button></div>
+          </div>
+        </div>
+        <div class="card monitor" data-agency="fourlines" onclick="toggleCard(event, this)">
+          <div class="row">
+            <div class="prio p3">—</div>
+            <div>
+              <div class="meta-line">
+                <span class="agency-name" onclick="event.stopPropagation(); openDrawer('agency','fourlines')">Four Lines Aviation</span>
+                <span class="agency-code">#5742</span>
+                <span class="tag">Value · Riyadh</span>
+                <span class="tag play monitor">Cross-window contradiction</span>
+              </div>
+              <div class="headline">WoW -61% but MoM <b>+31%</b>. Recent wobble on a growing trend. Not yet a pattern.</div>
+            </div>
+            <div class="impact"><div class="imp-lbl">Status</div><div class="imp-val muted">Watch</div></div>
+            <div class="status"><div class="st-lbl">Rec.</div><div class="st-val muted">Re-check next week</div></div>
+            <div class="actions"><button class="btn cta ghost" onclick="event.stopPropagation(); quickAction('snooze','fourlines')">Snooze</button></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Compare callout: Routed -->
+    <div class="compare-panel">
+      <div class="ct">Flow 7 · Blocked / credit-overdrawn agencies</div>
+      <div class="cmp-grid">
+        <div class="cmp-col old">
+          <div class="hd">Original</div>
+          <ol>
+            <li>Blocked agencies (ALMaktab, VIAJES ZEPPELIN, JUST BOOK) appear in the KAM's feed with the same "Schedule Meeting" CTA as healthy ones</li>
+            <li>KAM calls, learns they're blocked, wastes the call</li>
+            <li>No easy way to hand off — just a generic "credit related block" note in the briefing</li>
+          </ol>
+          <div class="fin"><b>~⅓ of flagged agencies are wasted on the KAM.</b></div>
+        </div>
+        <div class="cmp-col new">
+          <div class="hd">Redesign</div>
+          <ol>
+            <li>Routed agencies are collapsed into a dedicated section with the CTA disabled</li>
+            <li>Banner shows who owns it now (Credit Ops · Priya M.) and when</li>
+            <li>Click the banner → drawer with the credit-ops thread; add a note if the KAM has context (e.g. "Owner says they'll wire on 24 May")</li>
+          </ol>
+          <div class="fin"><b>KAM cannot schedule on them; escalation is 1 click; engine stops weighting them against the KAM's action rate.</b></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===================== ROUTED ===================== -->
+    <section class="section">
+      <div class="sec-head">
+        <span class="dot" style="background: var(--routed)"></span>
+        <h2>Routed elsewhere</h2>
+        <span class="count">· 5 agencies · not your lever</span>
+        <span class="sub" style="margin-left:auto">Handed to Credit Ops or Compliance.</span>
+        <span class="chev" onclick="toggleSec(this)">Show <span class="caret">▾</span></span>
+      </div>
+      <div class="sec-body collapsed">
+        <div class="card routed" data-agency="viajes">
+          <div class="row">
+            <div class="prio p3">—</div>
+            <div>
+              <div class="meta-line">
+                <span class="agency-name" onclick="openDrawer('agency','viajes')">VIAJES ZEPPELIN</span>
+                <span class="agency-code">#66054</span>
+                <span class="tag">Value · Bogotá</span>
+                <span class="tag play routed">Credit exhausted · 113%</span>
+              </div>
+              <div class="headline">Credit overdrawn by $XX — blocked from booking. Not a KAM lever until resolved.</div>
+              <div class="routed-banner" onclick="openDrawer('creditops','viajes')">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 5l7 7-7 7"/></svg>
+                Routed to Credit Ops · 2 days ago · Owner: Priya M. · <b>click to view thread</b>
+              </div>
+            </div>
+            <div class="impact"><div class="imp-lbl">Your action</div><div class="imp-val muted">—</div></div>
+            <div class="status"><div class="st-lbl">FYI</div><div class="st-val muted">You'll be notified on resolution</div></div>
+            <div class="actions">
+              <button class="btn cta disabled">Schedule meeting</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="card routed" data-agency="justbook">
+          <div class="row">
+            <div class="prio p3">—</div>
+            <div>
+              <div class="meta-line">
+                <span class="agency-name" onclick="openDrawer('agency','justbook')">JUST BOOK & TRAVEL</span>
+                <span class="agency-code">#44272</span>
+                <span class="tag">Value · Milan</span>
+                <span class="tag play routed">Credit exhausted · 109%</span>
+              </div>
+              <div class="headline">Credit balance negative. Recent 7d bookings recovering — follow up after unblock.</div>
+              <div class="routed-banner" onclick="openDrawer('creditops','justbook')">Routed to Credit Ops · 4 days ago · Owner: Priya M. · <b>click to view thread</b></div>
+            </div>
+            <div class="impact"><div class="imp-lbl">Your action</div><div class="imp-val muted">—</div></div>
+            <div class="status"><div class="st-lbl">FYI</div><div class="st-val muted">Follow-up play queued on unblock</div></div>
+            <div class="actions"><button class="btn cta disabled">Schedule meeting</button></div>
+          </div>
+        </div>
+
+        <div class="card routed" data-agency="almaktab">
+          <div class="row">
+            <div class="prio p3">—</div>
+            <div>
+              <div class="meta-line">
+                <span class="agency-name" onclick="openDrawer('agency','almaktab')">ALMaktab Travel Agency</span>
+                <span class="agency-code">#343</span>
+                <span class="tag">Large · Kuwait</span>
+                <span class="tag play routed">Blocked — reason unclear</span>
+              </div>
+              <div class="headline">Flagged as blocked but credit only 32% used. Routed to Credit Ops for diagnosis — system data may be stale.</div>
+              <div class="routed-banner" onclick="openDrawer('creditops','almaktab')" style="color: #FCA5A5; border-color: rgba(239,68,68,.35); background: rgba(239,68,68,.08);">⚠︎ Data inconsistency — awaiting confirmation · <b>click to view thread</b></div>
+            </div>
+            <div class="impact"><div class="imp-lbl">Your action</div><div class="imp-val muted">—</div></div>
+            <div class="status"><div class="st-lbl">FYI</div><div class="st-val muted">Hold</div></div>
+            <div class="actions"><button class="btn cta disabled">Schedule meeting</button></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Footer note -->
+    <div style="margin-top: 40px; padding: 14px 16px; border: 1px dashed var(--border); border-radius: 8px; color: var(--text-dim); font-size: 12px;">
+      <b style="color: var(--text);">How to use this prototype:</b>
+      Toggle <b style="color: var(--accent);">Flow annotations</b> in the header to see every flow compared side by side. Every CTA is interactive — click <i>Schedule meeting</i>, <i>Send email</i>, an agency name, the <i>⋯</i> menu, the routed banner, the filter button, or "Plan my next week" to see how the new flow compresses the work.
+    </div>
+  </main>
+
+  <!-- Right rail: Calendar tab -->
+  <aside class="calrail" onclick="openDrawer('calendar')">
+    <div class="tab">Calendar</div>
+  </aside>
+</div>
+
+<!-- =============== DRAWER + OVERLAY =============== -->
+<div class="overlay" id="overlay" onclick="closeAll()"></div>
+
+<!-- Agency peek panel -->
+<aside class="drawer wide" id="drawer-agency">
+  <div class="dhead">
+    <h3 id="ag-title">Agency detail</h3>
+    <span class="muted" id="ag-code"></span>
+    <button class="close" onclick="closeAll()">✕</button>
+  </div>
+  <div class="dbody" id="ag-body">
+    <!-- Injected -->
+  </div>
+  <div class="dfoot">
+    <button class="btn" onclick="closeAll()">Close</button>
+    <button class="btn primary" id="ag-cta">Schedule meeting</button>
+  </div>
+</aside>
+
+<!-- Email composer drawer -->
+<aside class="drawer" id="drawer-email">
+  <div class="dhead">
+    <h3>Send email</h3>
+    <span class="muted" id="em-agency"></span>
+    <button class="close" onclick="closeAll()">✕</button>
+  </div>
+  <div class="dbody">
+    <div style="background: var(--accent-soft); border: 1px dashed var(--accent); color: var(--accent); padding: 8px 12px; border-radius: 6px; font-size: 12px; margin-bottom: 12px;">
+      ✦ Template prefilled from this card's "Lead with this" — opens with a market-positive framing, not a defensive one.
+    </div>
+    <div class="compose-field">
+      <label>From</label>
+      <input value="eric.chen@almosafer.com" readonly />
+    </div>
+    <div class="compose-field">
+      <label>To</label>
+      <input id="em-to" />
+    </div>
+    <div class="compose-field">
+      <label>Subject</label>
+      <input id="em-subject" />
+    </div>
+    <div class="compose-field">
+      <label>Body</label>
+      <textarea id="em-body"></textarea>
+    </div>
+    <div style="margin-top: 14px; font-size: 12px; color: var(--text-dim);">
+      <b style="color: var(--text);">Attach:</b>
+      <button class="btn xs" style="margin-left: 6px;">+ Briefing PDF</button>
+      <button class="btn xs">+ Rate sheet</button>
+      <button class="btn xs">+ Promo code</button>
+    </div>
+  </div>
+  <div class="dfoot">
+    <button class="btn ghost" onclick="closeAll()">Cancel</button>
+    <button class="btn" onclick="toast('Saved draft — find it in Drafts'); closeAll();">Save draft</button>
+    <button class="btn primary" onclick="confirmEmail()">Send email</button>
+  </div>
+</aside>
+
+<!-- Dismiss-with-reason drawer -->
+<aside class="drawer" id="drawer-dismiss">
+  <div class="dhead">
+    <h3>Dismiss flag</h3>
+    <span class="muted" id="dm-agency"></span>
+    <button class="close" onclick="closeAll()">✕</button>
+  </div>
+  <div class="dbody">
+    <p style="color: var(--text-dim); font-size: 13px;">Your reason trains the engine — next week it won't surface the same noise.</p>
+    <div style="display: flex; flex-direction: column; gap: 8px; margin-top: 10px;">
+      <label class="dsop"><input type="radio" name="dm" /> Low-volume / not a real trend</label>
+      <label class="dsop"><input type="radio" name="dm" checked /> Individual customer cancellation — not share loss</label>
+      <label class="dsop"><input type="radio" name="dm" /> Already in a relationship conversation</label>
+      <label class="dsop"><input type="radio" name="dm" /> Geopolitical / seasonality — expected</label>
+      <label class="dsop"><input type="radio" name="dm" /> Data looks wrong — flag for data team</label>
+      <label class="dsop"><input type="radio" name="dm" /> Other (add note below)</label>
+    </div>
+    <div class="compose-field" style="margin-top: 14px;">
+      <label>Note</label>
+      <textarea placeholder="Optional context for data team / next week's AI run"></textarea>
+    </div>
+  </div>
+  <div class="dfoot">
+    <button class="btn ghost" onclick="closeAll()">Cancel</button>
+    <button class="btn primary" onclick="confirmDismiss()">Dismiss</button>
+  </div>
+</aside>
+
+<!-- Outcome drawer -->
+<aside class="drawer" id="drawer-outcome">
+  <div class="dhead">
+    <h3>Log outcome</h3>
+    <span class="muted" id="oc-agency"></span>
+    <button class="close" onclick="closeAll()">✕</button>
+  </div>
+  <div class="dbody">
+    <p style="color: var(--text-dim); font-size: 13px;">A short post-call note. Feeds back into next week's ranking.</p>
+    <div class="filt-section">
+      <div class="ft">Outcome</div>
+      <div class="filt-chips">
+        <div class="filt-chip on">Met · productive</div>
+        <div class="filt-chip">Met · no commitment</div>
+        <div class="filt-chip">No-show</div>
+        <div class="filt-chip">Rescheduled</div>
+        <div class="filt-chip">Email only</div>
+      </div>
+    </div>
+    <div class="filt-section">
+      <div class="ft">Root cause (pick any)</div>
+      <div class="filt-chips">
+        <div class="filt-chip on">Share loss — competitor</div>
+        <div class="filt-chip">Supplier gap</div>
+        <div class="filt-chip">Rate gap</div>
+        <div class="filt-chip">Conversion friction</div>
+        <div class="filt-chip">Relationship / owner</div>
+        <div class="filt-chip">Credit / block</div>
+      </div>
+    </div>
+    <div class="compose-field">
+      <label>Notes</label>
+      <textarea placeholder="What did they say? What's the next step?"></textarea>
+    </div>
+    <div class="filt-section">
+      <div class="ft">Next step</div>
+      <div class="filt-chips">
+        <div class="filt-chip on">Follow up in 7 days</div>
+        <div class="filt-chip">Send rate sheet</div>
+        <div class="filt-chip">Escalate to team lead</div>
+        <div class="filt-chip">Close (no further action)</div>
+      </div>
+    </div>
+  </div>
+  <div class="dfoot">
+    <button class="btn ghost" onclick="closeAll()">Cancel</button>
+    <button class="btn primary" onclick="toast('Outcome logged · next play queued for 26 May'); closeAll();">Save</button>
+  </div>
+</aside>
+
+<!-- Plan Next Week drawer -->
+<aside class="drawer wide" id="drawer-plan-next">
+  <div class="dhead">
+    <h3>Plan my next week</h3>
+    <span class="muted">Week of 26 May 2026</span>
+    <button class="close" onclick="closeAll()">✕</button>
+  </div>
+  <div class="dbody">
+    <div style="background: var(--accent-soft); border: 1px dashed var(--accent); color: var(--accent); padding: 10px 14px; border-radius: 8px; font-size: 12px; margin-bottom: 14px;">
+      ✦ AI has pre-sequenced 16 plays across Mon–Fri based on priority × your past response rates × agency availability. Uncheck any you disagree with, then approve.
+    </div>
+
+    <div class="plan-day">
+      <div class="pd-head"><b>Mon 26 May</b> · 3 plays · $7,800 at risk · <span class="muted">12–3 PM free</span></div>
+      <div class="pd-body">
+        <div class="plan-item"><input type="checkbox" checked /><div class="pname">GOLDEN GATE Travel <span class="pcode">#42108</span><div class="pwhen">12:30 PM · 30 min · Call</div></div><span class="ptag" style="background: var(--p0-soft); color: var(--p0);">P0 · $3.2K</span></div>
+        <div class="plan-item"><input type="checkbox" checked /><div class="pname">TARVEL PACKAGES EXCHANGE <span class="pcode">#2478</span><div class="pwhen">1:30 PM · 20 min · Call</div></div><span class="ptag" style="background: var(--p0-soft); color: var(--p0);">P0 · $2.8K</span></div>
+        <div class="plan-item"><input type="checkbox" checked /><div class="pname">Golden Time Trips <span class="pcode">#121891</span><div class="pwhen">2:30 PM · Email</div></div><span class="ptag" style="background: var(--p1-soft); color: var(--p1);">P1 · $1.8K</span></div>
+      </div>
+    </div>
+
+    <div class="plan-day">
+      <div class="pd-head"><b>Tue 27 May</b> · 4 plays · $4,600 at risk</div>
+      <div class="pd-body">
+        <div class="plan-item"><input type="checkbox" checked /><div class="pname">PAYAMO Tours <span class="pcode">#9012</span><div class="pwhen">10:00 AM · 20 min</div></div><span class="ptag" style="background: var(--p1-soft); color: var(--p1);">P1 · $1.9K</span></div>
+        <div class="plan-item"><input type="checkbox" checked /><div class="pname">ESPEROR Travel <span class="pcode">#10098</span><div class="pwhen">11:30 AM · 15 min</div></div><span class="ptag" style="background: var(--p1-soft); color: var(--p1);">P1 · $1.2K</span></div>
+        <div class="plan-item"><input type="checkbox" /><div class="pname">OOTVL Agency <span class="pcode">#6721</span><div class="pwhen">2:00 PM · Email</div></div><span class="ptag" style="background: var(--p2-soft); color: var(--p2);">P2 · $900</span></div>
+        <div class="plan-item"><input type="checkbox" checked /><div class="pname">AWADAYA Tours <span class="pcode">#8021</span><div class="pwhen">3:30 PM · Email</div></div><span class="ptag" style="background: var(--p2-soft); color: var(--p2);">P2 · $600</span></div>
+      </div>
+    </div>
+
+    <div class="plan-day">
+      <div class="pd-head"><b>Wed 28 May</b> · <span style="color: var(--text-mute);">blocked — team offsite 9–2</span></div>
+      <div class="pd-body">
+        <div class="plan-item"><input type="checkbox" /><div class="pname">Blue Skies Ltd <span class="pcode">#5542</span><div class="pwhen">3:00 PM · 20 min</div></div><span class="ptag" style="background: var(--p2-soft); color: var(--p2);">P2 · $500</span></div>
+      </div>
+    </div>
+
+    <div class="plan-day">
+      <div class="pd-head"><b>Thu 29 May</b> · 4 plays · $3,800 upside</div>
+      <div class="pd-body">
+        <div class="plan-item"><input type="checkbox" checked /><div class="pname">Marina Global <span class="pcode">#7788</span><div class="pwhen">10:00 AM · 20 min</div></div><span class="ptag" style="background: var(--p1-soft); color: var(--p1);">P1 · $1.3K</span></div>
+        <div class="plan-item"><input type="checkbox" checked /><div class="pname">Harvest Travel <span class="pcode">#3321</span><div class="pwhen">11:00 AM · Email</div></div><span class="ptag" style="background: var(--p2-soft); color: var(--p2);">P2 · $900</span></div>
+        <div class="plan-item"><input type="checkbox" checked /><div class="pname">Sands Getaway <span class="pcode">#6012</span><div class="pwhen">2:30 PM · 20 min</div></div><span class="ptag" style="background: var(--p2-soft); color: var(--p2);">P2 · $800</span></div>
+        <div class="plan-item"><input type="checkbox" checked /><div class="pname">Indigo Atlas <span class="pcode">#9091</span><div class="pwhen">4:00 PM · Email</div></div><span class="ptag" style="background: var(--p2-soft); color: var(--p2);">P2 · $800</span></div>
+      </div>
+    </div>
+
+    <div class="plan-day">
+      <div class="pd-head"><b>Fri 30 May</b> · 4 plays · $3,100 upside</div>
+      <div class="pd-body">
+        <div class="plan-item"><input type="checkbox" checked /><div class="pname">Delta Wing Tours <span class="pcode">#2266</span><div class="pwhen">10:00 AM · 30 min</div></div><span class="ptag" style="background: var(--p1-soft); color: var(--p1);">P1 · $1.1K</span></div>
+        <div class="plan-item"><input type="checkbox" checked /><div class="pname">First Travel France <span class="pcode">#130619</span><div class="pwhen">3:00 PM · 15 min</div></div><span class="ptag" style="background: var(--p2-soft); color: var(--p2);">P2 · $1.6K</span></div>
+      </div>
+    </div>
+  </div>
+  <div class="dfoot">
+    <button class="btn ghost" onclick="closeAll()">Send back for rework</button>
+    <button class="btn">Move to Tue (free time)</button>
+    <button class="btn primary" onclick="toast('Plan approved · 15 plays scheduled for 26–30 May'); closeAll();">Approve plan</button>
+  </div>
+</aside>
+
+<!-- Hunter mode drawer -->
+<aside class="drawer" id="drawer-hunter">
+  <div class="dhead">
+    <h3>Hunter mode</h3>
+    <span class="muted">Proactive opportunities outside your book</span>
+    <button class="close" onclick="closeAll()">✕</button>
+  </div>
+  <div class="dbody">
+    <p style="color: var(--text-dim); font-size: 13px;">Hunter mode re-weights your feed from <b>retention</b> toward <b>acquisition / re-activation</b>.</p>
+    <div class="filt-section">
+      <div class="ft">Target type</div>
+      <div class="filt-chips">
+        <div class="filt-chip on">Reactivation (dormant 60+ days)</div>
+        <div class="filt-chip on">Lookalikes of your top 10</div>
+        <div class="filt-chip">Category expansion (new destinations)</div>
+        <div class="filt-chip">Unassigned leads (regional pool)</div>
+      </div>
+    </div>
+    <div class="filt-section">
+      <div class="ft">Scope</div>
+      <div class="filt-chips">
+        <div class="filt-chip on">Saudi Arabia</div>
+        <div class="filt-chip">UAE</div>
+        <div class="filt-chip">Kuwait</div>
+        <div class="filt-chip">Egypt</div>
+      </div>
+    </div>
+  </div>
+  <div class="dfoot">
+    <button class="btn ghost" onclick="closeAll()">Cancel</button>
+    <button class="btn primary" onclick="toast('Hunter mode on · 8 new leads added to your feed'); closeAll();">Switch to Hunter</button>
+  </div>
+</aside>
+
+<!-- Calendar drawer -->
+<aside class="drawer" id="drawer-calendar">
+  <div class="dhead">
+    <h3>This week's calendar</h3>
+    <span class="muted">19–23 May 2026</span>
+    <button class="close" onclick="closeAll()">✕</button>
+  </div>
+  <div class="dbody">
+    <div style="display: grid; grid-template-columns: 60px 1fr; gap: 0; font-size: 12px;">
+      <div style="color: var(--text-mute); padding: 6px 4px;">9 AM</div>
+      <div style="border-left: 1px solid var(--border); padding: 6px 10px;">—</div>
+      <div style="color: var(--text-mute); padding: 6px 4px;">10 AM</div>
+      <div style="border-left: 1px solid var(--border); padding: 6px 10px;">Team sync</div>
+      <div style="color: var(--text-mute); padding: 6px 4px;">11 AM</div>
+      <div style="border-left: 1px solid var(--border); padding: 6px 10px;">—</div>
+      <div style="color: var(--text-mute); padding: 6px 4px;">12 PM</div>
+      <div style="border-left: 1px solid var(--border); background: var(--accent-soft); color: var(--accent); padding: 6px 10px; font-weight: 600;">Premier Business Travel · 12:15–12:45</div>
+      <div style="color: var(--text-mute); padding: 6px 4px;">1 PM</div>
+      <div style="border-left: 1px solid var(--border); padding: 6px 10px;">Lunch</div>
+      <div style="color: var(--text-mute); padding: 6px 4px;">2 PM</div>
+      <div style="border-left: 1px solid var(--border); background: var(--accent-soft); color: var(--accent); padding: 6px 10px; font-weight: 600;">Nasar Abdullah · 2:00–2:30</div>
+      <div style="color: var(--text-mute); padding: 6px 4px;">3 PM</div>
+      <div style="border-left: 1px solid var(--border); padding: 6px 10px;">—</div>
+      <div style="color: var(--text-mute); padding: 6px 4px;">4 PM</div>
+      <div style="border-left: 1px solid var(--border); padding: 6px 10px;">1:1 with manager</div>
+    </div>
+  </div>
+  <div class="dfoot">
+    <button class="btn" onclick="closeAll()">Close</button>
+    <button class="btn primary">Open in Outlook</button>
+  </div>
+</aside>
+
+<!-- Filters drawer -->
+<aside class="drawer" id="drawer-filters">
+  <div class="dhead">
+    <h3>Filter your plan</h3>
+    <span class="muted" id="filt-count">17 results</span>
+    <button class="close" onclick="closeAll()">✕</button>
+  </div>
+  <div class="dbody">
+    <div class="filt-section">
+      <div class="ft">Saved views</div>
+      <div class="filt-chips">
+        <div class="filt-chip on">Saudi P0s</div>
+        <div class="filt-chip">Share-loss only</div>
+        <div class="filt-chip">Credit to reopen</div>
+        <div class="filt-chip">+ Save current</div>
+      </div>
+    </div>
+    <div class="filt-section">
+      <div class="ft">Priority</div>
+      <div class="filt-chips">
+        <div class="filt-chip on">P0</div>
+        <div class="filt-chip on">P1</div>
+        <div class="filt-chip on">P2</div>
+        <div class="filt-chip">P3</div>
+      </div>
+    </div>
+    <div class="filt-section">
+      <div class="ft">Play type</div>
+      <div class="filt-chips">
+        <div class="filt-chip on">Retention</div>
+        <div class="filt-chip on">Opportunity</div>
+        <div class="filt-chip on">Conversion</div>
+        <div class="filt-chip">Monitor</div>
+        <div class="filt-chip">Routed</div>
+      </div>
+    </div>
+    <div class="filt-section">
+      <div class="ft">Market</div>
+      <div class="filt-chips">
+        <div class="filt-chip on">Saudi Arabia</div>
+        <div class="filt-chip">UAE</div>
+        <div class="filt-chip">Kuwait</div>
+        <div class="filt-chip">France</div>
+        <div class="filt-chip">UK</div>
+        <div class="filt-chip">Tanzania</div>
+      </div>
+    </div>
+    <div class="filt-section">
+      <div class="ft">GTV at risk ≥</div>
+      <div class="filt-chips">
+        <div class="filt-chip">$500</div>
+        <div class="filt-chip on">$1,000</div>
+        <div class="filt-chip">$2,500</div>
+        <div class="filt-chip">$5,000</div>
+      </div>
+    </div>
+  </div>
+  <div class="dfoot">
+    <button class="btn ghost" onclick="closeAll()">Reset</button>
+    <button class="btn primary" onclick="toast('Filter applied · 17 results'); closeAll();">Apply</button>
+  </div>
+</aside>
+
+<!-- Credit Ops thread drawer -->
+<aside class="drawer" id="drawer-creditops">
+  <div class="dhead">
+    <h3>Credit Ops thread</h3>
+    <span class="muted" id="co-agency"></span>
+    <button class="close" onclick="closeAll()">✕</button>
+  </div>
+  <div class="dbody">
+    <div style="background: var(--surface-3); border: 1px solid var(--border); border-radius: 8px; padding: 10px 12px; margin-bottom: 12px;">
+      <div style="font-size: 12px; color: var(--text-dim); margin-bottom: 4px;">Status</div>
+      <div style="font-size: 13px;"><b style="color: var(--compare-old);">Awaiting agency response</b> · escalated 2 days ago · owner: Priya M. (Credit Ops)</div>
+    </div>
+    <div class="thread-msg theirs">
+      <div class="meta">Priya M. (Credit Ops) · 17 May, 10:24</div>
+      Opened case. Sent payment reminder to finance@zeppelin.co. Credit balance at –$12,400.
+    </div>
+    <div class="thread-msg theirs">
+      <div class="meta">Priya M. · 18 May, 15:10</div>
+      Agency confirmed wire sent on 17 May. Expecting reconciliation today or tomorrow.
+    </div>
+    <div class="thread-msg mine">
+      <div class="meta">Eric Chen · 19 May, 09:05</div>
+      Thanks — their owner mentioned on 15 May they'd be clearing this week. Happy to call them once unblocked.
+    </div>
+    <div style="background: var(--accent-soft); border: 1px dashed var(--accent); border-radius: 6px; padding: 10px; font-size: 12px; margin-top: 10px;">
+      ✦ Once unblocked, this agency will re-surface in your feed with a pre-queued "recovery call" play — no manual action needed.
+    </div>
+    <div class="compose-field" style="margin-top: 14px;">
+      <label>Note</label>
+      <textarea placeholder="Add context for Credit Ops"></textarea>
+    </div>
+  </div>
+  <div class="dfoot">
+    <button class="btn ghost" onclick="closeAll()">Close</button>
+    <button class="btn primary" onclick="toast('Note added to thread'); closeAll();">Send note</button>
+  </div>
+</aside>
+
+<!-- =============== BOTTOM SHEET: SCHEDULE =============== -->
+<div class="sheet" id="sheet-schedule">
+  <div class="sheet-inner">
+    <div class="shead">
+      <div>
+        <h3 id="sh-title">Schedule meeting</h3>
+        <div style="color: var(--text-dim); font-size: 12px; margin-top: 2px;" id="sh-sub">with Premier Business Travel · Ahmad K.</div>
+      </div>
+      <button class="close" onclick="closeAll()">✕</button>
+    </div>
+    <div class="sbody">
+      <div style="background: var(--accent-soft); border: 1px dashed var(--accent); color: var(--accent); padding: 8px 12px; border-radius: 6px; font-size: 12px; margin-bottom: 14px;">
+        ✦ AI picked <b id="sh-rec">Mon 19 May, 12:15–12:45 PM</b> — fits your calendar and agency's usual response window.
+      </div>
+
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 18px;">
+        <div>
+          <div class="ft" style="font-size: 11px; text-transform: uppercase; color: var(--text-mute); font-weight: 700; letter-spacing: .05em; margin-bottom: 6px;">Pick a day</div>
+          <div class="cal-mini" id="cal-mini"></div>
+        </div>
+        <div>
+          <div class="ft" style="font-size: 11px; text-transform: uppercase; color: var(--text-mute); font-weight: 700; letter-spacing: .05em; margin-bottom: 6px;">Pick a slot</div>
+          <div class="slots">
+            <div class="slot sel" onclick="selectSlot(this)"><div class="st">12:15 PM</div><div class="sd">30 min</div><div class="sai">✦ AI pick</div></div>
+            <div class="slot" onclick="selectSlot(this)"><div class="st">2:00 PM</div><div class="sd">30 min</div></div>
+            <div class="slot" onclick="selectSlot(this)"><div class="st">3:30 PM</div><div class="sd">30 min</div></div>
+            <div class="slot" onclick="selectSlot(this)"><div class="st">4:15 PM</div><div class="sd">30 min</div></div>
+          </div>
+          <div class="ft" style="font-size: 11px; text-transform: uppercase; color: var(--text-mute); font-weight: 700; letter-spacing: .05em; margin: 14px 0 6px;">Meeting template</div>
+          <select style="width:100%; height: 36px; background: var(--surface-2); border: 1px solid var(--border); border-radius: 6px; color: var(--text); padding: 0 10px; font-family: inherit;">
+            <option>Retention recovery (30 min) · Lead with market comparison</option>
+            <option>Conversion diagnostic (20 min) · Lead with L2B gap</option>
+            <option>Opportunity push (15 min) · Lead with search signal</option>
+            <option>Blank / custom</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="compose-field" style="margin-top: 18px;">
+        <label>Note to invite</label>
+        <textarea style="min-height: 60px;">Quick 30-min to walk through performance vs. the Saudi market this week — would love your read on what's moving and where we can help you catch more of it.</textarea>
+      </div>
+    </div>
+    <div class="sfoot">
+      <button class="btn ghost" onclick="closeAll()">Cancel</button>
+      <button class="btn">Email only — skip meeting</button>
+      <button class="btn primary" onclick="confirmSchedule()">Send invite</button>
+    </div>
+  </div>
+</div>
+
+<!-- =============== POPOVER TEMPLATE (rendered into .actions on demand) =============== -->
+
+<!-- =============== TOASTS =============== -->
+<div class="toasts" id="toasts"></div>
+
+<script>
+  /* ---------- FLOW MODE TOGGLE ---------- */
+  function toggleFlowMode() {
+    document.body.classList.toggle('flow-on');
+    document.getElementById('flowSwitch').classList.toggle('on');
+  }
+
+  /* ---------- CARD EXPAND ---------- */
+  function toggleCard(e, el) {
+    if (e.target.closest('button, a, input, .agency-name, .routed-banner')) return;
+    el.classList.toggle('open');
+  }
+  function toggleSec(el) {
+    const body = el.closest('.sec-head').nextElementSibling;
+    if (!body) return;
+    body.classList.toggle('collapsed');
+    if (body.classList.contains('collapsed')) {
+      el.firstChild.textContent = 'Show ';
+    } else {
+      el.firstChild.textContent = 'Hide ';
+    }
+  }
+
+  /* ---------- DAY LADDER ---------- */
+  document.querySelectorAll('.day').forEach(d => {
+    d.addEventListener('click', () => {
+      document.querySelectorAll('.day').forEach(x => x.classList.remove('active'));
+      d.classList.add('active');
+    });
+  });
+
+  /* ---------- FILTER CHIPS ---------- */
+  document.querySelectorAll('.filt-chip').forEach(c => {
+    c.addEventListener('click', () => c.classList.toggle('on'));
+  });
+
+  /* ---------- DRAWER SYSTEM ---------- */
+  const DRAWERS = ['agency','email','dismiss','outcome','plan-next','hunter','calendar','filters','creditops'];
+  function closeAll() {
+    DRAWERS.forEach(n => document.getElementById('drawer-'+n).classList.remove('open'));
+    document.getElementById('sheet-schedule').classList.remove('open');
+    document.getElementById('overlay').classList.remove('open');
+    closePopovers();
+  }
+  function openDrawer(kind, agencyId) {
+    closeAll();
+    document.getElementById('overlay').classList.add('open');
+    let id = 'drawer-' + ({
+      agency: 'agency',
+      email: 'email',
+      dismiss: 'dismiss',
+      outcome: 'outcome',
+      planNext: 'plan-next',
+      hunter: 'hunter',
+      calendar: 'calendar',
+      filters: 'filters',
+      creditops: 'creditops'
+    }[kind] || kind);
+    const d = document.getElementById(id);
+    if (d) d.classList.add('open');
+
+    if (kind === 'agency') injectAgency(agencyId);
+    if (kind === 'email') injectEmail(agencyId);
+    if (kind === 'dismiss') document.getElementById('dm-agency').textContent = AGENCIES[agencyId]?.name || '';
+    if (kind === 'outcome') document.getElementById('oc-agency').textContent = AGENCIES[agencyId]?.name || '';
+    if (kind === 'creditops') document.getElementById('co-agency').textContent = AGENCIES[agencyId]?.name || '';
+  }
+
+  /* ---------- AGENCY DATA (mock) ---------- */
+  const AGENCIES = {
+    premier: { name: "Premier Business Travel", code: "#PRB2938", country: "Saudi Arabia", gtv: "$180K LTM", lastBooking: "3 days ago", credit: "41% / $400K", risk: "$2,500", play: "Retention recovery",
+      lead: "The Saudi market grew 50% last week — I wanted to walk through what's working for other partners and where we can help you catch more of that.",
+      ask: "Dubai bookings dropped 100% MoM while the market held. What changed for those customers? Are they quoting elsewhere?",
+      owner: "Ahmad K., Commercial Director", firstRow: "-25% WoW · +50% market WoW",
+      mail: { to: "ahmad.k@premier-travel.sa", sub: "Quick 30 min — Saudi market up 50% last week", body: "Hi Ahmad,\n\nThe Saudi market grew ~50% last week. I'd love a quick 30 min to walk through where Premier is relative to that, and to show what's working for other partners in your segment.\n\nMonday 12:15 PM works on my side — let me know if a different slot suits.\n\nThanks,\nEric" } },
+    nasar: { name: "Nasar Abdullah Travel & Tourism", code: "#32851", country: "Saudi Arabia", gtv: "$64K LTM", lastBooking: "4 days ago", credit: "22.1%", risk: "$4,200", play: "Retention recovery",
+      lead: "I noticed you haven't logged in since the 10th — wanted to check in and see if there's anything blocking you, and walk through what's working for other Jeddah partners this month.",
+      ask: "Bookings are down while Jeddah is up. Are they quoting with someone else, or is demand soft on their specific segment?",
+      owner: "Nasar A., Owner", firstRow: "-71.9% WoW · +50% market WoW",
+      mail: { to: "nasar@nat-tourism.sa", sub: "Check-in — haven't seen you log in since the 10th", body: "Hi Nasar,\n\nHaven't seen your team log in since the 10th; wanted to make sure nothing's blocked on our end. Jeddah's up about 50% week-on-week, so if there's something worth walking through, happy to jump on.\n\nEric" } },
+    binghaith: { name: "Binghaith Travel Agency", code: "#1056", country: "Saudi Arabia", gtv: "$410K LTM", lastBooking: "Today", credit: "31% / $380K", risk: "-$1,500 (upside)", play: "Opportunity — destination mix",
+      lead: "Your Makkah and Riyadh searches are up this week — I'm sending a curated list of higher-margin properties we've just pricematch'd there.",
+      ask: "If promo hits, layer a conversation on Dubai — find out why it dropped off. Could signal a new competitor or channel shift.",
+      owner: "Mohammed H., Ops Manager", firstRow: "Dubai -100% MoM · Makkah +12% searches",
+      mail: { to: "ops@binghaith.sa", sub: "Makkah + Riyadh — new matched rates you'll want to quote", body: "Hi Mohammed,\n\nAttaching a short Makkah + Riyadh rate sheet we just matched — noticed both are trending in your searches this week. Worth a quote on the top 3 before end of week.\n\nSeparately, Dubai has slowed for you — want to understand if it's a rate or product issue so we can help.\n\nEric" } },
+    skylink: { name: "SKYLINK Travel & Tours", code: "#2429", country: "Tanzania", gtv: "$82K LTM", lastBooking: "Yesterday", credit: "38%", risk: "-$1,200 (upside)", play: "Conversion recovery",
+      lead: "Your search volume is trending back up — let's walk through the quotes that aren't closing and see if there's a rate or product gap we can close.",
+      ask: "Top-3 searched hotels where your L2B is below market average. Consider opening up AGODA inventory.",
+      owner: "Juma S., Director", firstRow: "-61% MoM GTV · +5% WoW · searches +18%",
+      mail: null },
+    meem: { name: "MEEM International Traders", code: "#112790", country: "United Kingdom", gtv: "$42K LTM", lastBooking: "11 days ago", credit: "18%", risk: "$1,800", play: "Retention — supplier mix",
+      lead: "Wanted to check if something has changed on the Makkah side — your AGODA and KIZANELITE bookings are both down sharply, which doesn't match what we're seeing in the UK market.",
+      ask: "Offer a 20-min call with the supplier team to open up HOTELBEDS inventory for Makkah/Madinah.",
+      owner: "Sarah K., Account Manager", firstRow: "Makkah -70% MoM · AGODA & KIZAN both -75%",
+      mail: { to: "sarah@meem-travel.co.uk", sub: "Makkah/Madinah — we can open HOTELBEDS inventory", body: "Hi Sarah,\n\nYour Makkah/Madinah bookings are down ~70% MoM and both AGODA and KIZANELITE have dropped ~75% — the UK market hasn't moved like that, so wanted to check in.\n\nHappy to open HOTELBEDS inventory on Makkah this week if that helps close the gap.\n\nEric" } },
+    alfahad: { name: "Al Fahad Travel", code: "#2534", country: "Saudi Arabia", gtv: "$22K LTM", lastBooking: "2 days ago", credit: "19%", risk: "-$900 (recovery)", play: "Retention — recovery watch",
+      lead: "Saw your 7-day bookings are back up 50%. Wanted to check what triggered that so we can lean into it.",
+      ask: "What changed in the last week that's working? Helpful to understand whether this is their customer or a new channel.",
+      owner: "Faisal Al-F., Owner", firstRow: "YoY -70% · MoM -54% · 7d +50%",
+      mail: { to: "faisal@alfahad.sa", sub: "Nice rebound — what's working?", body: "Hi Faisal,\n\nYour 7-day bookings are up about 50% — nice to see. If there's something specific that's working, happy to find more of it for you. Short email's fine, or 15 min on Thu if easier.\n\nEric" } },
+    first: { name: "First Travel France", code: "#130619", country: "France", gtv: "$58K LTM", lastBooking: "6 days ago", credit: "21%", risk: "-$1,600 (upside)", play: "Opportunity — Loches destination",
+      lead: "Bookings to zero WoW and two main suppliers are down >80%. Want to make sure we haven't broken something on our side.",
+      ask: "Is it EANV2/BOOKINGDOTCOM on their end or ours? Quick call Fri to diagnose.",
+      owner: "Camille R., Ops", firstRow: "WoW bookings → 0 · EANV2 -80% · BOOKINGDOTCOM -80%",
+      mail: null },
+    blue: { name: "Blue Horizon Travel", code: "#79068", country: "Saudi Arabia", gtv: "$240K LTM", lastBooking: "Today", credit: "52%", risk: "—", play: "Monitor — healthy",
+      lead: "Flagged in error — agency is healthy; relationship is strong.",
+      ask: "No action required.",
+      owner: "—", firstRow: "WoW +726% · YoY +38% · MoM -20%", mail: null },
+    antaeus: { name: "ANTAEUS Travel Group", code: "#28716", country: "Greece", gtv: "$8K LTM", lastBooking: "12 days ago", credit: "12%", risk: "—", play: "Monitor — low volume",
+      lead: "Low-volume agency; recent swings driven by 1–2 customers, not a trend.",
+      ask: "Re-check next week.",
+      owner: "—", firstRow: "WoW -20.7% · MoM +14.1% on 7 bookings", mail: null },
+    fourlines: { name: "Four Lines Aviation", code: "#5742", country: "Saudi Arabia", gtv: "$14K LTM", lastBooking: "3 days ago", credit: "22%", risk: "—", play: "Monitor — contradiction",
+      lead: "WoW -61% vs MoM +31% — likely a short-term wobble on an otherwise recovering trend.",
+      ask: "Re-check next week before acting.",
+      owner: "—", firstRow: "WoW -61% · MoM +31%", mail: null },
+    viajes: { name: "VIAJES ZEPPELIN", code: "#66054", country: "Colombia", gtv: "$32K LTM", lastBooking: "5 days ago", credit: "113% — overdrawn", risk: "—", play: "Routed · Credit Ops",
+      lead: "Credit overdrawn. Routed to Priya M. (Credit Ops).",
+      ask: "Not a KAM lever until unblocked.",
+      owner: "—", firstRow: "Credit -$12,400 balance", mail: null },
+    justbook: { name: "JUST BOOK & TRAVEL", code: "#44272", country: "Italy", gtv: "$28K LTM", lastBooking: "8 days ago", credit: "109% — overdrawn", risk: "—", play: "Routed · Credit Ops",
+      lead: "Credit overdrawn. Routed to Priya M. (Credit Ops).",
+      ask: "Recovery play queued for when unblocked.",
+      owner: "—", firstRow: "Credit -$4,800 balance", mail: null },
+    almaktab: { name: "ALMaktab Travel Agency", code: "#343", country: "Kuwait", gtv: "$188K LTM", lastBooking: "2 days ago", credit: "32% — but flagged blocked", risk: "—", play: "Routed · Data check",
+      lead: "Blocked flag but credit is only 32% used. Data inconsistency — routed to Credit Ops to diagnose.",
+      ask: "Hold. Don't call.",
+      owner: "—", firstRow: "Flag: Blocked · Credit: 32%", mail: null },
+  };
+
+  function injectAgency(id) {
+    const a = AGENCIES[id];
+    if (!a) return;
+    document.getElementById('ag-title').textContent = a.name;
+    document.getElementById('ag-code').textContent = a.code + ' · ' + a.country;
+    const body = document.getElementById('ag-body');
+    body.innerHTML = `
+      <div style="background: ${a.play.startsWith('Routed') ? 'rgba(245,158,11,.08)' : a.play.startsWith('Monitor') ? 'rgba(107,114,128,.08)' : 'rgba(239,68,68,.08)'};
+        border: 1px dashed ${a.play.startsWith('Routed') ? 'var(--routed)' : a.play.startsWith('Monitor') ? 'var(--monitor)' : 'var(--p0)'};
+        color: var(--text); padding: 10px 14px; border-radius: 8px; font-size: 12.5px; margin-bottom: 14px;">
+        <b>${a.play}</b> · ${a.firstRow}
+      </div>
+      <div class="peek-meta">
+        <div class="pm"><div class="lbl">Country</div><div class="val">${a.country}</div></div>
+        <div class="pm"><div class="lbl">LTM GTV</div><div class="val">${a.gtv}</div></div>
+        <div class="pm"><div class="lbl">Last booking</div><div class="val">${a.lastBooking}</div></div>
+        <div class="pm"><div class="lbl">Credit</div><div class="val">${a.credit}</div></div>
+        <div class="pm"><div class="lbl">Risk / opportunity</div><div class="val">${a.risk}</div></div>
+        <div class="pm"><div class="lbl">Owner</div><div class="val" style="font-size: 13px;">${a.owner || '—'}</div></div>
+      </div>
+
+      <div class="block" style="margin-bottom: 12px;">
+        <div class="blbl">Lead with this</div>
+        <div class="btxt">${a.lead}</div>
+      </div>
+      <div class="block" style="margin-bottom: 18px;">
+        <div class="blbl">Ask in the meeting</div>
+        <div class="btxt">${a.ask}</div>
+      </div>
+
+      <div class="filt-section">
+        <div class="ft">Relationship history (last 3)</div>
+        <div class="thread-msg theirs">
+          <div class="meta">Eric Chen · 5 May, 10:15</div>
+          Quarterly review call. Owner mentioned launching Umrah package line in Jun.
+        </div>
+        <div class="thread-msg theirs">
+          <div class="meta">Eric Chen · 12 Apr, 14:30</div>
+          Sent updated Makkah rate sheet. Acknowledged.
+        </div>
+        <div class="thread-msg theirs">
+          <div class="meta">Eric Chen · 28 Mar, 09:00</div>
+          30-min call — discussed Dubai conversion; offered HOTELBEDS inventory.
+        </div>
+      </div>
+
+      <div class="filt-section">
+        <div class="ft">Key data signals</div>
+        <div class="signals">
+          <div class="signal"><span class="k">WoW bookings</span><span class="v neg">-25%</span></div>
+          <div class="signal"><span class="k">Market WoW</span><span class="v pos">+50.6%</span></div>
+          <div class="signal"><span class="k">Credit used</span><span class="v">${a.credit}</span></div>
+          <div class="signal"><span class="k">L2B</span><span class="v">0.16</span></div>
+          <div class="signal"><span class="k">Top supplier</span><span class="v">EANV2 (22.8%)</span></div>
+          <div class="signal"><span class="k">Top city</span><span class="v">Riyadh (41%)</span></div>
+        </div>
+      </div>
+    `;
+    const cta = document.getElementById('ag-cta');
+    if (a.play.startsWith('Routed')) {
+      cta.className = 'btn cta disabled';
+      cta.textContent = 'Schedule meeting (routed)';
+      cta.onclick = null;
+    } else {
+      cta.className = 'btn primary';
+      cta.textContent = 'Schedule meeting';
+      cta.onclick = () => { closeAll(); openSchedule(id); };
+    }
+  }
+
+  function injectEmail(id) {
+    const a = AGENCIES[id];
+    if (!a) return;
+    document.getElementById('em-agency').textContent = a.name;
+    const m = a.mail || { to: 'contact@' + id + '.com', sub: 'Quick check-in', body: 'Hi,\n\nWanted to touch base.\n\nEric' };
+    document.getElementById('em-to').value = m.to;
+    document.getElementById('em-subject').value = m.sub;
+    document.getElementById('em-body').value = m.body;
+  }
+
+  /* ---------- SCHEDULE SHEET ---------- */
+  let scheduleId = null;
+  function openSchedule(id) {
+    scheduleId = id;
+    closeAll();
+    const a = AGENCIES[id];
+    if (a) {
+      document.getElementById('sh-title').textContent = 'Schedule meeting — ' + a.name;
+      document.getElementById('sh-sub').textContent = 'with ' + (a.owner || 'primary contact');
+    }
+    buildCalMini();
+    document.getElementById('overlay').classList.add('open');
+    document.getElementById('sheet-schedule').classList.add('open');
+  }
+  function selectSlot(el) {
+    document.querySelectorAll('.slot').forEach(s => s.classList.remove('sel'));
+    el.classList.add('sel');
+    document.getElementById('sh-rec').textContent = 'Mon 19 May, ' + el.querySelector('.st').textContent;
+  }
+  function buildCalMini() {
+    const grid = document.getElementById('cal-mini');
+    grid.innerHTML = '';
+    ['M','T','W','T','F','S','S'].forEach(h => {
+      const d = document.createElement('div'); d.className = 'head'; d.textContent = h; grid.appendChild(d);
+    });
+    // Simple 2-week calendar mock; day 19 is selected
+    const days = [];
+    for (let i = 18; i <= 31; i++) days.push({ n: i, sel: i === 19, mute: i > 23 });
+    days.forEach(d => {
+      const el = document.createElement('div');
+      el.className = 'cd' + (d.sel ? ' sel' : '') + (d.mute ? ' mute' : '');
+      el.textContent = d.n;
+      el.onclick = () => {
+        document.querySelectorAll('.cal-mini .cd').forEach(x => x.classList.remove('sel'));
+        el.classList.add('sel');
+      };
+      grid.appendChild(el);
+    });
+  }
+  function confirmSchedule() {
+    const id = scheduleId;
+    if (id) {
+      const card = document.querySelector('.card[data-agency="'+id+'"]');
+      if (card) {
+        card.classList.add('scheduled');
+        const statusVal = card.querySelector('.status .st-val');
+        if (statusVal) { statusVal.textContent = 'Scheduled · Mon 12:15'; statusVal.classList.add('done'); }
+        const stSub = card.querySelector('.status .st-sub');
+        if (stSub) stSub.textContent = 'Invite sent ✓';
+      }
+    }
+    closeAll();
+    toast('Meeting scheduled · invite on its way ✓');
+  }
+
+  /* ---------- EMAIL ---------- */
+  function openEmail(id, edit) {
+    closeAll();
+    document.getElementById('overlay').classList.add('open');
+    document.getElementById('drawer-email').classList.add('open');
+    injectEmail(id);
+    window.__emailId = id;
+  }
+  function confirmEmail() {
+    const id = window.__emailId;
+    if (id) {
+      const card = document.querySelector('.card[data-agency="'+id+'"]');
+      if (card) {
+        card.classList.add('sent');
+        const statusVal = card.querySelector('.status .st-val');
+        if (statusVal) { statusVal.textContent = 'Email sent today'; statusVal.classList.add('done'); }
+      }
+    }
+    closeAll();
+    toast('Email sent ✓ · outcome will auto-log when they reply');
+  }
+
+  /* ---------- DISMISS ---------- */
+  function confirmDismiss() {
+    closeAll();
+    toast('Dismissed — engine will weigh this down next run', true);
+  }
+
+  /* ---------- POPOVER (⋯ menu) ---------- */
+  function closePopovers() {
+    document.querySelectorAll('.popover.open').forEach(p => p.classList.remove('open'));
+  }
+  function togglePopover(e, btn, agencyId) {
+    closePopovers();
+    const actions = btn.closest('.actions');
+    let pop = actions.querySelector('.popover');
+    if (!pop) {
+      pop = document.createElement('div');
+      pop.className = 'popover';
+      pop.innerHTML = `
+        <button class="mi" onclick="openDrawer('outcome','${agencyId}')">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+          Log outcome
+        </button>
+        <button class="mi" onclick="quickAction('snooze','${agencyId}')">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+          Snooze 7 days
+        </button>
+        <button class="mi" onclick="quickAction('reassign','${agencyId}')">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>
+          Reassign
+        </button>
+        <button class="mi" onclick="quickAction('route','${agencyId}')">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="M13 5l7 7-7 7"/></svg>
+          Route to Credit Ops
+        </button>
+        <hr/>
+        <button class="mi danger" onclick="openDrawer('dismiss','${agencyId}')">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+          Dismiss (with reason)
+        </button>
+      `;
+      actions.appendChild(pop);
+      pop.addEventListener('click', (ev) => ev.stopPropagation());
+    }
+    pop.classList.toggle('open');
+  }
+  document.addEventListener('click', (e) => {
+    if (!e.target.closest('.btn.more') && !e.target.closest('.popover')) closePopovers();
+  });
+
+  /* ---------- QUICK ACTIONS ---------- */
+  function quickAction(kind, id) {
+    closePopovers();
+    const card = document.querySelector('.card[data-agency="'+id+'"]');
+    const label = AGENCIES[id]?.name || id;
+    if (kind === 'snooze') {
+      if (card) card.classList.add('dismissed');
+      toast(label + ' snoozed for 7 days', true);
+    } else if (kind === 'dismiss') {
+      if (card) card.classList.add('dismissed');
+      toast(label + ' dismissed', true);
+    } else if (kind === 'reassign') {
+      toast('Reassigned ' + label + ' to Omar S.');
+    } else if (kind === 'route') {
+      toast(label + ' routed to Credit Ops · Priya M. notified');
+    }
+  }
+
+  /* ---------- TOAST ---------- */
+  function toast(msg, withUndo) {
+    const t = document.createElement('div');
+    t.className = 'toast';
+    t.innerHTML = msg + (withUndo ? ' · <button class="undo">Undo</button>' : '');
+    document.getElementById('toasts').appendChild(t);
+    setTimeout(() => {
+      t.style.transition = 'opacity .3s, transform .3s';
+      t.style.opacity = 0;
+      t.style.transform = 'translateY(6px)';
+      setTimeout(() => t.remove(), 320);
+    }, withUndo ? 4000 : 2600);
+  }
+
+  /* ---------- CLOSE ON ESC ---------- */
+  document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeAll(); });
+</script>
+</body>
+</html>
